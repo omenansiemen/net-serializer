@@ -1,0 +1,17 @@
+{
+  "name": "typed-serializer",
+  "version": "1.0.0",
+  "description": "Serialize javascript object into array buffer using template object",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "lz-string": "^1.4.4",
+    "typescript": "^3.0.3"
+  }
+}
