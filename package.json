@@ -1,14 +1,14 @@
 {
-  "name": "typed-serializer",
+  "name": "net-serializer",
   "version": "1.0.0",
-  "description": "Serialize javascript object into array buffer using template object",
+  "description": "Type aware object serializer for sending structured data efficiently over network. Uses template object to describe which properties will be serialized into binary data buffer.",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
   },
-  "author": "",
+  "author": "Tatu Anttonen",
   "license": "ISC",
   "devDependencies": {
     "lz-string": "^1.4.4",

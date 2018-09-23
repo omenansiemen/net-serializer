@@ -152,7 +152,7 @@ function getByteLength(metaValue) {
         }
     }
     else {
-        console.error('Can not get byte length', metaValue);
+        throw Error(`Can't get byte length ${metaValue}`);
     }
     return byteLength;
 }
@@ -219,14 +219,14 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
         value = decodeText(buffer.slice(strBufStart, strBufEnd));
     }
     else {
-        console.error('Unknown metaValue._type', metaValue._type);
+        throw Error(`Unknown metaValue._type ${metaValue}`);
     }
     if (isNumber(metaValue._multiplier) && isNumber(value)) {
         value = value / metaValue._multiplier;
     }
     return { value, byteOffset: byteOffset + byteLength };
 }
-exports.compress = (objects, template, header = []) => {
+exports.pack = (objects, template, header = []) => {
     let { sizeInBytes, flatArray } = flatten(objects, template);
     // Header is appended end of the flattened object
     header.forEach(metaValue => {
@@ -244,7 +244,7 @@ exports.compress = (objects, template, header = []) => {
     });
     return buffer;
 };
-exports.uncompress = (buffer, template) => {
+exports.unpack = (buffer, template) => {
     return unflatten(buffer, template, { byteOffset: 0 });
 };
 const MakeDecoderFn = (decoder) => (input) => decoder.decode(input);
@@ -267,9 +267,9 @@ exports.setTextHandler = (handler) => {
     encodeText = MakeEncoderFn(handler);
     decodeText = MakeDecoderFn(handler);
 };
-const TypedSerializer = {
-    compress: exports.compress,
-    uncompress: exports.uncompress,
+const NetSerializer = {
+    pack: exports.pack,
+    unpack: exports.unpack,
     setTextHandler: exports.setTextHandler
 };
-exports.default = TypedSerializer;
+exports.default = NetSerializer;

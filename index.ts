@@ -258,7 +258,7 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, byteOffs
 	return { value, byteOffset: byteOffset + byteLength };
 }
 
-export const compress = (objects: any, template: any, header: IMetaValue[] = []) => {
+export const pack = (objects: any, template: any, header: IMetaValue[] = []) => {
 
 	let { sizeInBytes, flatArray } = flatten(objects, template)
 	// Header is appended end of the flattened object
@@ -279,7 +279,7 @@ export const compress = (objects: any, template: any, header: IMetaValue[] = [])
 	return buffer
 }
 
-export const uncompress = (buffer: ArrayBuffer, template: any): any => {
+export const unpack = (buffer: ArrayBuffer, template: any): any => {
 	return unflatten(buffer, template, { byteOffset: 0 })
 }
 
@@ -318,9 +318,9 @@ export const setTextHandler = (handler: ITextHandler) => {
 	decodeText = MakeDecoderFn(handler)
 }
 
-const TypedSerializer = {
-	compress,
-	uncompress,
+const NetSerializer = {
+	pack,
+	unpack,
 	setTextHandler
 }
-export default TypedSerializer
+export default NetSerializer
