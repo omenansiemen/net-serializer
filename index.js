@@ -5,6 +5,18 @@ const isBoolean = (val) => typeof val === 'boolean';
 const isObject = (val) => typeof val === 'object';
 const isArray = (val) => typeof val === 'object' && Array.isArray(val);
 const isNumber = (val) => (typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)));
+var MetaValueTypes;
+(function (MetaValueTypes) {
+    MetaValueTypes["int8"] = "int8";
+    MetaValueTypes["uint8"] = "uint8";
+    MetaValueTypes["int16"] = "int16";
+    MetaValueTypes["uint16"] = "uint16";
+    MetaValueTypes["int32"] = "int32";
+    MetaValueTypes["uint32"] = "uint32";
+    MetaValueTypes["float32"] = "float32";
+    MetaValueTypes["boolean"] = "boolean";
+    MetaValueTypes["string"] = "string";
+})(MetaValueTypes || (MetaValueTypes = {}));
 const isMetaValue = (object) => typeof object._type === 'string';
 function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) {
     if (isArray(data) && isArray(template)) {
@@ -152,7 +164,7 @@ function getByteLength(metaValue) {
         }
     }
     else {
-        throw Error(`Can't get byte length ${metaValue}`);
+        throw Error(`Unknown type: ${metaValue._type}`);
     }
     return byteLength;
 }

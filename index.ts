@@ -6,6 +6,17 @@ const isNumber = (val: any): val is number =>
 	(typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)))
 	
 type MetaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'boolean' | 'string'
+enum MetaValueTypes {
+	int8 = 'int8',
+	uint8 = 'uint8',
+	int16 = 'int16',
+	uint16 = 'uint16',
+	int32 = 'int32',
+	uint32 = 'uint32',
+	float32 = 'float32',
+	boolean = 'boolean',
+	string = 'string',
+}
 
 export interface IMetaValue {
 	_type: MetaValueType
@@ -171,7 +182,7 @@ function getByteLength(metaValue: IMetaValue) {
 			byteLength = 4 // Slot for length of the text as bytes
 		}
 	} else {
-		throw Error(`Can't get byte length ${metaValue}`)
+		throw Error(`Unknown type: ${metaValue._type}`)
 	}
 	return byteLength;
 }
