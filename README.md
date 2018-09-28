@@ -75,15 +75,13 @@ const data = {
     visible: true
   }]
 }
+import NetSerializer from 'net-serializer'
+const arrayBuffer = NetSerializer.pack(data, template)
 ````
 
 and deserialized object will look like 
 
 ````javascript
-import NetSerializer from 'net-serializer'
-
-const arrayBuffer = NetSerializer.pack(data, template)
-
 const expectedResult = {
   label: 'Väinämöinen',
   objects: [{
@@ -110,4 +108,5 @@ const expectedResult = {
 
 const deserializedData = NetSerializer.unpack(arrayBuffer, template)
 JSON.stringify(deserializedData) === JSON.stringify(expectedResult)
+// true
 ````
