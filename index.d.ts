@@ -1,9 +1,9 @@
 declare type MetaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'boolean' | 'string';
 export interface IMetaValue {
-    _type: MetaValueType;
-    _multiplier?: number;
+    type: MetaValueType;
+    multiplier?: number;
+    preventOverflow?: boolean;
     _value?: number | boolean | Uint8Array;
-    _preventOverflow?: boolean;
 }
 export declare const pack: (objects: any, template: any, header?: IMetaValue[]) => ArrayBuffer;
 export declare const unpack: (buffer: ArrayBuffer, template: any) => any;

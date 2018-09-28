@@ -1,5 +1,6 @@
 const NetSerializer = require('../index')
 const testData = require('./testData3')
+// const testData = {data: {val: true}, template: {val: {type: 'boolean'}}}
 const lz = require("lz-string")
 const TextEncoder = require('text-encoding').TextEncoder
 const TextDecoder = require('text-encoding').TextDecoder

@@ -2,7 +2,7 @@ exports.template = require('./testData2').template
 exports.data = {
   label: 'Väinämöinen',
   objects: [{
-    identifier: { playerId: 1, serial: 1910.9818835989754 },
+    identifier: { playerId: 1, serial: 1910 },
     body:
     {
       position: { x: 87.0156357205063, y: 96.13073426289853 },
@@ -12,7 +12,7 @@ exports.data = {
     visible: false
   },
   {
-    identifier: { playerId: 1, serial: 10215.461354394007 },
+    identifier: { playerId: 1, serial: 10215 },
     body:
     {
       position: { x: 937.3588667980719, y: 28.385851467368937 },

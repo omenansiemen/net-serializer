@@ -1,17 +1,17 @@
 const personTpl = {
-  id: { _type: 'uint32' },
+  id: { type: 'uint32' },
   name: {
-    first: { _type: 'string' },
-    last: { _type: 'string' }
+    first: { type: 'string' },
+    last: { type: 'string' }
   },
   dayOfBirth: {
-    year: { _type: 'int16' },
-    month: { _type: 'uint8' },
-    day: { _type: 'uint8' }
+    year: { type: 'int16' },
+    month: { type: 'uint8' },
+    day: { type: 'uint8' }
   },
-  weight: { _type: 'uint16', '_multiplier': 10 },
-  height: { _type: 'uint16', '_multiplier': 10 },
-  record: {_type: 'uint16', '_multiplier': 100}
+  weight: { type: 'uint16', 'multiplier': 10 },
+  height: { type: 'uint16', 'multiplier': 10 },
+  record: {type: 'uint16', 'multiplier': 100}
 }
 exports.personsTpl = [personTpl]
 exports.persons = [{

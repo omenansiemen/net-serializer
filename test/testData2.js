@@ -1,22 +1,22 @@
 exports.template = {
-  label: { _type: 'string' },
+  label: { type: 'string' },
   objects: [{
     identifier: {
-      playerId: { _type: 'uint8' },
-      serial: { _type: 'uint16' },
+      playerId: { type: 'uint8' },
+      serial: { type: 'uint16' },
     },
     body: {
       position: {
-        x: { _type: 'int16' },
-        y: { _type: 'int16' },
+        x: { type: 'int16' },
+        y: { type: 'int16' },
       },
       velocity: {
-        x: { _type: 'int16', _multiplier: 1000 },
-        y: { _type: 'int16', _multiplier: 1000 },
+        x: { type: 'int16', multiplier: 1000 },
+        y: { type: 'int16', multiplier: 1000 },
       },
-      angle: { _type: 'uint16', _multiplier: 65535 / (2 * Math.PI) }
+      angle: { type: 'uint16', multiplier: 65535 / (2 * Math.PI) }
     },
-    visible: { _type: 'boolean' }
+    visible: { type: 'boolean' }
   }]
 }
 
