@@ -5,24 +5,13 @@ const isBoolean = (val) => typeof val === 'boolean';
 const isObject = (val) => typeof val === 'object';
 const isArray = (val) => typeof val === 'object' && Array.isArray(val);
 const isNumber = (val) => (typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)));
-var MetaValueTypes;
-(function (MetaValueTypes) {
-    MetaValueTypes["int8"] = "int8";
-    MetaValueTypes["uint8"] = "uint8";
-    MetaValueTypes["int16"] = "int16";
-    MetaValueTypes["uint16"] = "uint16";
-    MetaValueTypes["int32"] = "int32";
-    MetaValueTypes["uint32"] = "uint32";
-    MetaValueTypes["float32"] = "float32";
-    MetaValueTypes["boolean"] = "boolean";
-    MetaValueTypes["string"] = "string";
-})(MetaValueTypes || (MetaValueTypes = {}));
 const isMetaValue = (object) => typeof object.type === 'string';
 function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) {
     if (isArray(data) && isArray(template)) {
         // Storing information how many elements are
-        refObject.flatArray.push({ _value: data.length, type: 'uint8' });
-        refObject.sizeInBytes += 1;
+        const arrayLength = { _value: data.length, type: 'uint32' };
+        refObject.flatArray.push(arrayLength);
+        refObject.sizeInBytes += getByteLength(arrayLength);
         data.forEach((element) => {
             if (isObject(element)) {
                 flatten(element, template[0], refObject);
@@ -44,8 +33,9 @@ function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) 
                 const tmpValue = encodeText(value);
                 const dataCopy = Object.assign({ _value: tmpValue }, templateValue);
                 // Storing length of bytes in string
-                refObject.flatArray.push({ _value: tmpValue.byteLength, type: 'uint32' });
-                refObject.sizeInBytes += 4;
+                const stringLength = { _value: tmpValue.byteLength, type: 'uint32' };
+                refObject.flatArray.push(stringLength);
+                refObject.sizeInBytes += getByteLength(stringLength);
                 // Storing value as Uint8Array of bytes
                 refObject.flatArray.push(dataCopy);
                 refObject.sizeInBytes += tmpValue.byteLength;
@@ -141,22 +131,21 @@ const addToBuffer = (params) => {
     }
     return byteLength;
 };
-function getByteLength(metaValue) {
+function getByteLength(value) {
     let byteLength;
-    const type = metaValue.type;
-    if (type === 'int32' || type === 'uint32' || type === 'float32') {
+    if (value.type === 'int32' || value.type === 'uint32' || value.type === 'float32') {
         byteLength = 4;
     }
-    else if (type === 'int16' || type === 'uint16') {
+    else if (value.type === 'int16' || value.type === 'uint16') {
         byteLength = 2;
     }
-    else if (type === 'int8' || type === 'uint8' || type === 'boolean') {
+    else if (value.type === 'int8' || value.type === 'uint8' || value.type === 'boolean') {
         byteLength = 1;
     }
-    else if (type === 'string') {
-        if (metaValue._value instanceof Uint8Array) {
+    else if (value.type === 'string') {
+        if (value._value instanceof Uint8Array) {
             // Flattening
-            byteLength = metaValue._value.byteLength;
+            byteLength = value._value.byteLength;
         }
         else {
             // Unflattening
@@ -164,7 +153,7 @@ function getByteLength(metaValue) {
         }
     }
     else {
-        throw Error(`Unknown type: ${metaValue.type}`);
+        throw Error(`Unknown type: ${value.type}`);
     }
     return byteLength;
 }
@@ -172,7 +161,7 @@ function unflatten(buffer, template, options) {
     let result;
     if (isArray(template)) {
         result = [];
-        const { value: length, byteOffset: newOffset } = getValueFromBuffer(buffer, { type: 'uint8' }, options.byteOffset);
+        const { value: length, byteOffset: newOffset } = getValueFromBuffer(buffer, { type: 'uint32' }, options.byteOffset);
         options.byteOffset = newOffset;
         for (let i = 0; i < length; i++) {
             result.push(unflatten(buffer, template[0], options));

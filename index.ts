@@ -6,17 +6,6 @@ const isNumber = (val: any): val is number =>
 	(typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)))
 	
 type MetaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'boolean' | 'string'
-enum MetaValueTypes {
-	int8 = 'int8',
-	uint8 = 'uint8',
-	int16 = 'int16',
-	uint16 = 'uint16',
-	int32 = 'int32',
-	uint32 = 'uint32',
-	float32 = 'float32',
-	boolean = 'boolean',
-	string = 'string',
-}
 
 export interface IMetaValue {
 	type: MetaValueType
@@ -35,8 +24,9 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 
 	if (isArray(data) && isArray(template)) {
 		// Storing information how many elements are
-		refObject.flatArray.push({ _value: data.length, type: 'uint8' })
-		refObject.sizeInBytes += 1
+		const arrayLength: IMetaValue = { _value: data.length, type: 'uint32' }
+		refObject.flatArray.push(arrayLength)
+		refObject.sizeInBytes += getByteLength(arrayLength)
 		data.forEach((element: any) => {
 			if (isObject(element)) {
 				flatten(element, template[0], refObject)
@@ -60,8 +50,9 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 					templateValue
 				)
 				// Storing length of bytes in string
-				refObject.flatArray.push({ _value: tmpValue.byteLength, type: 'uint32' })
-				refObject.sizeInBytes += 4
+				const stringLength: IMetaValue = { _value: tmpValue.byteLength, type: 'uint32' }
+				refObject.flatArray.push(stringLength)
+				refObject.sizeInBytes += getByteLength(stringLength)
 				// Storing value as Uint8Array of bytes
 				refObject.flatArray.push(dataCopy)
 				refObject.sizeInBytes += tmpValue.byteLength
@@ -161,28 +152,27 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	return byteLength
 }
 
-function getByteLength(metaValue: IMetaValue) {
+function getByteLength(value: IMetaValue) {
 	let byteLength;
-	const type = metaValue.type
-	if (type === 'int32' || type === 'uint32' || type === 'float32') {
+	if (value.type === 'int32' || value.type === 'uint32' || value.type === 'float32') {
 		byteLength = 4;
 	}
-	else if (type === 'int16' || type === 'uint16') {
+	else if (value.type === 'int16' || value.type === 'uint16') {
 		byteLength = 2;
 	}
-	else if (type === 'int8' || type === 'uint8' || type === 'boolean') {
+	else if (value.type === 'int8' || value.type === 'uint8' || value.type === 'boolean') {
 		byteLength = 1;
 	}
-	else if (type === 'string') {
-		if (metaValue._value instanceof Uint8Array) {
+	else if (value.type === 'string') {
+		if (value._value instanceof Uint8Array) {
 			// Flattening
-			byteLength = metaValue._value.byteLength
+			byteLength = value._value.byteLength
 		} else {
 			// Unflattening
 			byteLength = 4 // Slot for length of the text as bytes
 		}
 	} else {
-		throw Error(`Unknown type: ${metaValue.type}`)
+		throw Error(`Unknown type: ${value.type}`)
 	}
 	return byteLength;
 }
@@ -195,7 +185,7 @@ function unflatten(buffer: ArrayBuffer, template: any, options: { byteOffset: nu
 		result = [];
 		const { value: length, byteOffset: newOffset } = getValueFromBuffer(
 			buffer,
-			{ type: 'uint8' },
+			{ type: 'uint32' },
 			options.byteOffset
 		)
 		options.byteOffset = newOffset
