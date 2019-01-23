@@ -3,6 +3,7 @@ export interface IMetaValue {
     type: MetaValueType;
     multiplier?: number;
     preventOverflow?: boolean;
+    allowOverflow?: boolean;
     _value?: number | boolean | Uint8Array;
 }
 export declare const pack: (objects: any, template: any, header?: IMetaValue[]) => ArrayBuffer;

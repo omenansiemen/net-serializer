@@ -11,6 +11,7 @@ export interface IMetaValue {
 	type: MetaValueType
 	multiplier?: number
 	preventOverflow?: boolean
+	allowOverflow?: boolean
 	_value?: number | boolean | Uint8Array
 }
 const isMetaValue = (object: any): object is IMetaValue => typeof object.type === 'string';
@@ -95,14 +96,14 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	if (metaValue.type === 'uint8' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > 255 ? 255 : value))
-		} else {
+		} else if(!metaValue.allowOverflow) {
 			console.assert(value >= 0 && value <= 255, 'Uint8 overflow', metaValue)
 		}
 		view.setUint8(0, value);
 	} else if (metaValue.type === 'int8' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < -128 ? -128 : (value > 127 ? 127 : value))
-		} else {
+		} else if(!metaValue.allowOverflow) {
 			console.assert(value >= -128 && value <= 127, 'Int8 overflow', metaValue)
 		}
 		view.setInt8(0, value);
@@ -110,14 +111,14 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	else if (metaValue.type === 'uint16' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > 65535 ? 65535 : value))
-		} else {
+		} else if(!metaValue.allowOverflow) {
 			console.assert(value >= 0 && value <= 65535, 'Uint16 overflow', metaValue)
 		}
 		view.setUint16(0, value < 0 ? 0 : value > 65535 ? 65535 : value);
 	} else if (metaValue.type === 'int16' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < -32768 ? -32768 : (value > 32767 ? 32767 : value))
-		} else {
+		} else if(!metaValue.allowOverflow) {
 			console.assert(value >= -32768 && value <= 32767, 'Int16 overflow', metaValue)
 		}
 		view.setInt16(0, value);
@@ -125,14 +126,14 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	else if (metaValue.type === 'uint32' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > 4294967295 ? 4294967295 : value))
-		} else {
+		} else if(!metaValue.allowOverflow) {
 			console.assert(value >= 0 && value <= 4294967295, 'Uint32 overflow', metaValue)
 		}
 		view.setUint32(0, value < 0 ? 0 : value > 4294967295 ? 4294967295 : value);
 	} else if (metaValue.type === 'int32' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < -2147483648 ? -2147483648 : (value > 2147483647 ? 2147483647 : value))
-		} else {
+		} else if(!metaValue.allowOverflow) {
 			console.assert(value >= -2147483648 && value <= 2147483647, 'Int32 overflow', metaValue)
 		}
 		view.setInt32(0, value);
