@@ -283,22 +283,30 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, byteOffs
 	return { value, byteOffset: byteOffset + byteLength };
 }
 
-export const pack = (objects: any, template: any, sharedBuffer?: ArrayBuffer, startIndex?: number) => {
+interface packExtraParams {
+	sharedBuffer?: ArrayBuffer
+	startIndex?: number
+	returnCopy?: boolean
+}
+export const pack = (objects: any, template: any, extra: packExtraParams = {}) => {
+
+	const {
+		sharedBuffer,
+		startIndex = 0,
+		returnCopy = false,
+	} = extra
 
 	let { sizeInBytes, flatArray } = flatten(objects, template)
 
-	let byteOffset = 0
+	let byteOffset = startIndex
 
 	let buffer: ArrayBuffer
 	if (typeof sharedBuffer !== 'undefined') {
 		buffer = sharedBuffer
-		if(typeof startIndex === 'number') {
-			byteOffset = startIndex
-		}
 	} else {
 		buffer = new ArrayBuffer(sizeInBytes)
 	}
-	
+
 	flatArray.forEach(metaValue => {
 		byteOffset += addToBuffer({
 			buffer,
@@ -306,7 +314,11 @@ export const pack = (objects: any, template: any, sharedBuffer?: ArrayBuffer, st
 			byteOffset
 		})
 	})
-	return sharedBuffer
+
+	if (typeof sharedBuffer !== 'undefined' && returnCopy) {
+		return buffer.slice(startIndex, byteOffset)
+	}
+	return buffer
 }
 
 export const unpack = (buffer: ArrayBuffer, template: any): any => {

@@ -252,15 +252,13 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
     }
     return { value, byteOffset: byteOffset + byteLength };
 }
-exports.pack = (objects, template, sharedBuffer, startIndex) => {
+exports.pack = (objects, template, extra = {}) => {
+    const { sharedBuffer, startIndex = 0, returnCopy = false, } = extra;
     let { sizeInBytes, flatArray } = flatten(objects, template);
-    let byteOffset = 0;
+    let byteOffset = startIndex;
     let buffer;
     if (typeof sharedBuffer !== 'undefined') {
         buffer = sharedBuffer;
-        if (typeof startIndex === 'number') {
-            byteOffset = startIndex;
-        }
     }
     else {
         buffer = new ArrayBuffer(sizeInBytes);
@@ -272,7 +270,10 @@ exports.pack = (objects, template, sharedBuffer, startIndex) => {
             byteOffset
         });
     });
-    return sharedBuffer;
+    if (typeof sharedBuffer !== 'undefined' && returnCopy) {
+        return buffer.slice(startIndex, byteOffset);
+    }
+    return buffer;
 };
 exports.unpack = (buffer, template) => {
     return unflatten(buffer, template, { byteOffset: 0 });
