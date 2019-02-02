@@ -18,8 +18,9 @@ export interface IMetaValue {
 const isMetaValue = (object: any): object is IMetaValue => typeof object.type === 'string';
 
 interface IRefObject {
-	sizeInBytes: 0,
+	sizeInBytes: 0
 	flatArray: IMetaValue[]
+	buffer?: ArrayBuffer
 }
 
 function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes: 0, flatArray: [] }) {
@@ -27,7 +28,7 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 	if (isArray(data) && isArray(template)) {
 		// Storing information how many elements are
 		const arrayLength: IMetaValue = { _value: data.length, type: 'uint32' }
-		refObject.flatArray.push(arrayLength)
+		processMetaValue(refObject, arrayLength);
 		refObject.sizeInBytes += getByteLength(arrayLength)
 		data.forEach((element: any) => {
 			if (isObject(element)) {
@@ -57,10 +58,10 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 				}
 				const type = templateValue.stringMaxLen ? templateValue.stringMaxLen : 'uint32'
 				const stringLength: IMetaValue = { _value: tmpValue.byteLength, type }
-				refObject.flatArray.push(stringLength)
+				processMetaValue(refObject, stringLength);
 				refObject.sizeInBytes += getByteLength(stringLength)
 				// Storing value as Uint8Array of bytes
-				refObject.flatArray.push(dataCopy)
+				processMetaValue(refObject, dataCopy);
 				refObject.sizeInBytes += tmpValue.byteLength
 			}
 			else if (isNumber(value) && isMetaValue(templateValue)) {
@@ -68,7 +69,7 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 					{ _value: value },
 					templateValue
 				)
-				refObject.flatArray.push(dataCopy)
+				processMetaValue(refObject, dataCopy);
 				refObject.sizeInBytes += getByteLength(templateValue)
 			}
 			else {
@@ -156,6 +157,19 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 		console.error('Unknown metaValue.type', metaValue.type, value)
 	}
 	return byteLength
+}
+
+function processMetaValue(refObject: IRefObject, metaValue: IMetaValue) {
+	if (refObject.buffer) {
+		addToBuffer({
+			buffer: refObject.buffer,
+			metaValue,
+			byteOffset: refObject.sizeInBytes
+		});
+	}
+	else {
+		refObject.flatArray.push(metaValue);
+	}
 }
 
 function getByteLength(value: IMetaValue) {
@@ -296,7 +310,11 @@ export const pack = (objects: any, template: any, extra: packExtraParams = {}) =
 		returnCopy = false,
 	} = extra
 
-	let { sizeInBytes, flatArray } = flatten(objects, template)
+	let { sizeInBytes, flatArray } = flatten(objects, template, {
+		sizeInBytes: 0,
+		flatArray: [],
+		buffer: sharedBuffer,
+	})
 
 	let byteOffset = startIndex
 

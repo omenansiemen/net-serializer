@@ -20,15 +20,33 @@ const stringHandler = {
 
 NetSerializer.setTextHandler(stringHandler)
 
-console.log(util.inspect(testData.data, false, null, true))
+/* testi 1 */
+// console.log('Test 1, creating buffer')
+// console.log(util.inspect(testData.data, false, null, true))
 
 const aBuf = NetSerializer.pack(testData.data, testData.template)
-console.log(aBuf)
-console.log(new TextEncoder().encode(JSON.stringify(testData.data)).byteLength)
+// console.log(aBuf)
+// console.log(new TextEncoder().encode(JSON.stringify(testData.data)).byteLength)
 
 const obj = NetSerializer.unpack(aBuf, testData.template)
-console.log(util.inspect(obj, false, null, true))
+// console.log(util.inspect(obj, false, null, true))
 
 if(JSON.stringify(testData.expectedResult) !== JSON.stringify(obj)) {
+  process.exit(1)
+}
+
+/* testi 2 */
+// console.log('Test 2, shared buffer')
+// console.log(util.inspect(testData.data, false, null, true))
+
+const sharedBuffer = new ArrayBuffer(47)
+const aBuf2 = NetSerializer.pack(testData.data, testData.template, {sharedBuffer})
+// console.log(aBuf2)
+// console.log(new TextEncoder().encode(JSON.stringify(testData.data)).byteLength)
+
+const obj2 = NetSerializer.unpack(sharedBuffer, testData.template)
+// console.log(util.inspect(obj2, false, null, true))
+
+if(JSON.stringify(testData.expectedResult) !== JSON.stringify(obj2)) {
   process.exit(1)
 }

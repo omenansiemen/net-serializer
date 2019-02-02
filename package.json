@@ -6,7 +6,7 @@
   "types": "index.d.ts",
   "scripts": {
     "test": "node test/index.js",
-    "build": "tsc"
+    "build": "tsc && npm run test"
   },
   "author": "Tatu Anttonen <tatu.anttonen@gmail.com>",
   "license": "ISC",

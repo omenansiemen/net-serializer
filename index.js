@@ -10,7 +10,7 @@ function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) 
     if (isArray(data) && isArray(template)) {
         // Storing information how many elements are
         const arrayLength = { _value: data.length, type: 'uint32' };
-        refObject.flatArray.push(arrayLength);
+        processMetaValue(refObject, arrayLength);
         refObject.sizeInBytes += getByteLength(arrayLength);
         data.forEach((element) => {
             if (isObject(element)) {
@@ -37,15 +37,15 @@ function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) 
                 }
                 const type = templateValue.stringMaxLen ? templateValue.stringMaxLen : 'uint32';
                 const stringLength = { _value: tmpValue.byteLength, type };
-                refObject.flatArray.push(stringLength);
+                processMetaValue(refObject, stringLength);
                 refObject.sizeInBytes += getByteLength(stringLength);
                 // Storing value as Uint8Array of bytes
-                refObject.flatArray.push(dataCopy);
+                processMetaValue(refObject, dataCopy);
                 refObject.sizeInBytes += tmpValue.byteLength;
             }
             else if (isNumber(value) && isMetaValue(templateValue)) {
                 const dataCopy = Object.assign({ _value: value }, templateValue);
-                refObject.flatArray.push(dataCopy);
+                processMetaValue(refObject, dataCopy);
                 refObject.sizeInBytes += getByteLength(templateValue);
             }
             else {
@@ -134,6 +134,18 @@ const addToBuffer = (params) => {
     }
     return byteLength;
 };
+function processMetaValue(refObject, metaValue) {
+    if (refObject.buffer) {
+        addToBuffer({
+            buffer: refObject.buffer,
+            metaValue,
+            byteOffset: refObject.sizeInBytes
+        });
+    }
+    else {
+        refObject.flatArray.push(metaValue);
+    }
+}
 function getByteLength(value) {
     let byteLength;
     if (value.type === 'int32' || value.type === 'uint32' || value.type === 'float32') {
@@ -254,7 +266,11 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
 }
 exports.pack = (objects, template, extra = {}) => {
     const { sharedBuffer, startIndex = 0, returnCopy = false, } = extra;
-    let { sizeInBytes, flatArray } = flatten(objects, template);
+    let { sizeInBytes, flatArray } = flatten(objects, template, {
+        sizeInBytes: 0,
+        flatArray: [],
+        buffer: sharedBuffer,
+    });
     let byteOffset = startIndex;
     let buffer;
     if (typeof sharedBuffer !== 'undefined') {
