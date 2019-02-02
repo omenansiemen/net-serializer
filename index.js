@@ -58,6 +58,18 @@ function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) 
     }
     return refObject;
 }
+function processMetaValue(refObject, metaValue) {
+    if (refObject.buffer) {
+        addToBuffer({
+            buffer: refObject.buffer,
+            metaValue,
+            byteOffset: refObject.sizeInBytes
+        });
+    }
+    else {
+        refObject.flatArray.push(metaValue);
+    }
+}
 const addToBuffer = (params) => {
     const { metaValue, buffer, byteOffset } = params;
     const byteLength = getByteLength(metaValue);
@@ -134,18 +146,6 @@ const addToBuffer = (params) => {
     }
     return byteLength;
 };
-function processMetaValue(refObject, metaValue) {
-    if (refObject.buffer) {
-        addToBuffer({
-            buffer: refObject.buffer,
-            metaValue,
-            byteOffset: refObject.sizeInBytes
-        });
-    }
-    else {
-        refObject.flatArray.push(metaValue);
-    }
-}
 function getByteLength(value) {
     let byteLength;
     if (value.type === 'int32' || value.type === 'uint32' || value.type === 'float32') {
@@ -209,7 +209,7 @@ function unflatten(buffer, template, options) {
 function getValueFromBuffer(buffer, metaValue, byteOffset) {
     let value;
     let byteLength = getByteLength(metaValue);
-    console.assert(byteOffset + byteLength <= buffer.byteLength);
+    console.assert(byteOffset + byteLength <= buffer.byteLength, `${byteOffset} + ${byteLength} <= ${buffer.byteLength}`);
     var view = new DataView(buffer, byteOffset, byteLength);
     if (metaValue.type === 'uint8') {
         value = view.getUint8(0);
@@ -265,13 +265,12 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
     return { value, byteOffset: byteOffset + byteLength };
 }
 exports.pack = (objects, template, extra = {}) => {
-    const { sharedBuffer, startIndex = 0, returnCopy = false, } = extra;
+    const { sharedBuffer, returnCopy = false, } = extra;
     let { sizeInBytes, flatArray } = flatten(objects, template, {
         sizeInBytes: 0,
         flatArray: [],
         buffer: sharedBuffer,
     });
-    let byteOffset = startIndex;
     let buffer;
     if (typeof sharedBuffer !== 'undefined') {
         buffer = sharedBuffer;
@@ -279,15 +278,17 @@ exports.pack = (objects, template, extra = {}) => {
     else {
         buffer = new ArrayBuffer(sizeInBytes);
     }
+    // flatArray is empty if sharedBuffer is given
+    let byteOffset = 0;
     flatArray.forEach(metaValue => {
         byteOffset += addToBuffer({
             buffer,
             metaValue,
-            byteOffset
+            byteOffset,
         });
     });
     if (typeof sharedBuffer !== 'undefined' && returnCopy) {
-        return buffer.slice(startIndex, byteOffset);
+        return buffer.slice(0, sizeInBytes);
     }
     return buffer;
 };

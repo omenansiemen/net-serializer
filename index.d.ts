@@ -9,7 +9,6 @@ export interface IMetaValue {
 }
 interface packExtraParams {
     sharedBuffer?: ArrayBuffer;
-    startIndex?: number;
     returnCopy?: boolean;
 }
 export declare const pack: (objects: any, template: any, extra?: packExtraParams) => ArrayBuffer;
