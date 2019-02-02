@@ -4,9 +4,10 @@ export interface IMetaValue {
     multiplier?: number;
     preventOverflow?: boolean;
     allowOverflow?: boolean;
+    stringMaxLen?: 'uint8' | 'uint16';
     _value?: number | boolean | Uint8Array;
 }
-export declare const pack: (objects: any, template: any, header?: IMetaValue[]) => ArrayBuffer;
+export declare const pack: (objects: any, template: any, buffer: ArrayBuffer, startIndex: number) => ArrayBuffer;
 export declare const unpack: (buffer: ArrayBuffer, template: any) => any;
 interface ITextHandler {
     encode: (input: string) => Uint8Array;
@@ -14,7 +15,7 @@ interface ITextHandler {
 }
 export declare const setTextHandler: (handler: ITextHandler) => void;
 declare const NetSerializer: {
-    pack: (objects: any, template: any, header?: IMetaValue[]) => ArrayBuffer;
+    pack: (objects: any, template: any, buffer: ArrayBuffer, startIndex: number) => ArrayBuffer;
     unpack: (buffer: ArrayBuffer, template: any) => any;
     setTextHandler: (handler: ITextHandler) => void;
 };

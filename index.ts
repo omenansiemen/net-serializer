@@ -4,7 +4,7 @@ const isObject = (val: any): val is object => typeof val === 'object';
 const isArray = (val: any): val is Array<any> => typeof val === 'object' && Array.isArray(val);
 const isNumber = (val: any): val is number =>
 	(typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)))
-	
+
 type MetaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'boolean' | 'string'
 
 export interface IMetaValue {
@@ -12,6 +12,7 @@ export interface IMetaValue {
 	multiplier?: number
 	preventOverflow?: boolean
 	allowOverflow?: boolean
+	stringMaxLen?: 'uint8' | 'uint16'
 	_value?: number | boolean | Uint8Array
 }
 const isMetaValue = (object: any): object is IMetaValue => typeof object.type === 'string';
@@ -51,7 +52,11 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 					templateValue
 				)
 				// Storing length of bytes in string
-				const stringLength: IMetaValue = { _value: tmpValue.byteLength, type: 'uint32' }
+				if (templateValue.stringMaxLen) {
+
+				}
+				const type = templateValue.stringMaxLen ? templateValue.stringMaxLen : 'uint32'
+				const stringLength: IMetaValue = { _value: tmpValue.byteLength, type }
 				refObject.flatArray.push(stringLength)
 				refObject.sizeInBytes += getByteLength(stringLength)
 				// Storing value as Uint8Array of bytes
@@ -96,14 +101,14 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	if (metaValue.type === 'uint8' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > 255 ? 255 : value))
-		} else if(!metaValue.allowOverflow) {
+		} else if (!metaValue.allowOverflow) {
 			console.assert(value >= 0 && value <= 255, 'Uint8 overflow', metaValue)
 		}
 		view.setUint8(0, value);
 	} else if (metaValue.type === 'int8' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < -128 ? -128 : (value > 127 ? 127 : value))
-		} else if(!metaValue.allowOverflow) {
+		} else if (!metaValue.allowOverflow) {
 			console.assert(value >= -128 && value <= 127, 'Int8 overflow', metaValue)
 		}
 		view.setInt8(0, value);
@@ -111,14 +116,14 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	else if (metaValue.type === 'uint16' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > 65535 ? 65535 : value))
-		} else if(!metaValue.allowOverflow) {
+		} else if (!metaValue.allowOverflow) {
 			console.assert(value >= 0 && value <= 65535, 'Uint16 overflow', metaValue)
 		}
 		view.setUint16(0, value < 0 ? 0 : value > 65535 ? 65535 : value);
 	} else if (metaValue.type === 'int16' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < -32768 ? -32768 : (value > 32767 ? 32767 : value))
-		} else if(!metaValue.allowOverflow) {
+		} else if (!metaValue.allowOverflow) {
 			console.assert(value >= -32768 && value <= 32767, 'Int16 overflow', metaValue)
 		}
 		view.setInt16(0, value);
@@ -126,14 +131,14 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	else if (metaValue.type === 'uint32' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > 4294967295 ? 4294967295 : value))
-		} else if(!metaValue.allowOverflow) {
+		} else if (!metaValue.allowOverflow) {
 			console.assert(value >= 0 && value <= 4294967295, 'Uint32 overflow', metaValue)
 		}
 		view.setUint32(0, value < 0 ? 0 : value > 4294967295 ? 4294967295 : value);
 	} else if (metaValue.type === 'int32' && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < -2147483648 ? -2147483648 : (value > 2147483647 ? 2147483647 : value))
-		} else if(!metaValue.allowOverflow) {
+		} else if (!metaValue.allowOverflow) {
 			console.assert(value >= -2147483648 && value <= 2147483647, 'Int32 overflow', metaValue)
 		}
 		view.setInt32(0, value);
@@ -170,7 +175,13 @@ function getByteLength(value: IMetaValue) {
 			byteLength = value._value.byteLength
 		} else {
 			// Unflattening
-			byteLength = 4 // Slot for length of the text as bytes
+			if (value.stringMaxLen === 'uint8') {
+				byteLength = 1
+			} else if (value.stringMaxLen === 'uint16') {
+				byteLength = 2
+			} else {
+				byteLength = 4 // Slot for length of the text as bytes
+			}
 		}
 	} else {
 		throw Error(`Unknown type: ${value.type}`)
@@ -243,9 +254,21 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, byteOffs
 		value = view.getInt8(0) === 0 ? false : true
 	}
 	else if (metaValue.type === 'string') {
-		const strBufLen = view.getUint32(0)
-		byteLength += strBufLen
-		const strBufStart = byteOffset + 4
+		let strBufLen: number
+		let strBufStart: number
+		if (metaValue.stringMaxLen === 'uint8') {
+			strBufLen = view.getUint8(0)
+			byteLength += strBufLen
+			strBufStart = byteOffset + 1
+		} else if (metaValue.stringMaxLen === 'uint16') {
+			strBufLen = view.getUint16(0)
+			byteLength += strBufLen
+			strBufStart = byteOffset + 2
+		} else {
+			strBufLen = view.getUint32(0)
+			byteLength += strBufLen
+			strBufStart = byteOffset + 4
+		}
 		const strBufEnd = strBufStart + strBufLen
 		value = decodeText(buffer.slice(strBufStart, strBufEnd))
 	}
@@ -260,17 +283,19 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, byteOffs
 	return { value, byteOffset: byteOffset + byteLength };
 }
 
-export const pack = (objects: any, template: any, header: IMetaValue[] = []) => {
+export const pack = (objects: any, template: any, buffer: ArrayBuffer, startIndex: number) => {
 
 	let { sizeInBytes, flatArray } = flatten(objects, template)
-	// Header is appended end of the flattened object
-	header.forEach(metaValue => {
-		flatArray.push(metaValue)
-		sizeInBytes += getByteLength(metaValue)
-	})
 
-	const buffer = new ArrayBuffer(sizeInBytes)
 	let byteOffset = 0
+
+	if (typeof buffer === 'undefined') {
+		buffer = new ArrayBuffer(sizeInBytes)
+		if(typeof startIndex === 'number') {
+			byteOffset = startIndex
+		}
+	}
+	
 	flatArray.forEach(metaValue => {
 		byteOffset += addToBuffer({
 			buffer,
