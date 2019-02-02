@@ -33,7 +33,10 @@ function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) 
                 const tmpValue = encodeText(value);
                 const dataCopy = Object.assign({ _value: tmpValue }, templateValue);
                 // Storing length of bytes in string
-                const stringLength = { _value: tmpValue.byteLength, type: 'uint32' };
+                if (templateValue.stringMaxLen) {
+                }
+                const type = templateValue.stringMaxLen ? templateValue.stringMaxLen : 'uint32';
+                const stringLength = { _value: tmpValue.byteLength, type };
                 refObject.flatArray.push(stringLength);
                 refObject.sizeInBytes += getByteLength(stringLength);
                 // Storing value as Uint8Array of bytes
@@ -149,7 +152,15 @@ function getByteLength(value) {
         }
         else {
             // Unflattening
-            byteLength = 4; // Slot for length of the text as bytes
+            if (value.stringMaxLen === 'uint8') {
+                byteLength = 1;
+            }
+            else if (value.stringMaxLen === 'uint16') {
+                byteLength = 2;
+            }
+            else {
+                byteLength = 4; // Slot for length of the text as bytes
+            }
         }
     }
     else {
@@ -213,9 +224,23 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
         value = view.getInt8(0) === 0 ? false : true;
     }
     else if (metaValue.type === 'string') {
-        const strBufLen = view.getUint32(0);
-        byteLength += strBufLen;
-        const strBufStart = byteOffset + 4;
+        let strBufLen;
+        let strBufStart;
+        if (metaValue.stringMaxLen === 'uint8') {
+            strBufLen = view.getUint8(0);
+            byteLength += strBufLen;
+            strBufStart = byteOffset + 1;
+        }
+        else if (metaValue.stringMaxLen === 'uint16') {
+            strBufLen = view.getUint16(0);
+            byteLength += strBufLen;
+            strBufStart = byteOffset + 2;
+        }
+        else {
+            strBufLen = view.getUint32(0);
+            byteLength += strBufLen;
+            strBufStart = byteOffset + 4;
+        }
         const strBufEnd = strBufStart + strBufLen;
         value = decodeText(buffer.slice(strBufStart, strBufEnd));
     }
@@ -227,15 +252,15 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
     }
     return { value, byteOffset: byteOffset + byteLength };
 }
-exports.pack = (objects, template, header = []) => {
+exports.pack = (objects, template, buffer, startIndex) => {
     let { sizeInBytes, flatArray } = flatten(objects, template);
-    // Header is appended end of the flattened object
-    header.forEach(metaValue => {
-        flatArray.push(metaValue);
-        sizeInBytes += getByteLength(metaValue);
-    });
-    const buffer = new ArrayBuffer(sizeInBytes);
     let byteOffset = 0;
+    if (typeof buffer === 'undefined') {
+        buffer = new ArrayBuffer(sizeInBytes);
+        if (typeof startIndex === 'number') {
+            byteOffset = startIndex;
+        }
+    }
     flatArray.forEach(metaValue => {
         byteOffset += addToBuffer({
             buffer,
