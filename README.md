@@ -49,7 +49,7 @@ const template = {
 }
 ```
 
-With the above template the following data can be serialized. 
+With the above template the following data can be serialized.
 
 ````javascript
 const data = {
@@ -110,3 +110,24 @@ const deserializedData = NetSerializer.unpack(arrayBuffer, template)
 JSON.stringify(deserializedData) === JSON.stringify(expectedResult)
 // true
 ````
+
+In this case serialized form of the data (47 bytes) uses space roughly ten times less than JSON stringified (459 bytes).
+
+You can set custom text handler if TextEncoder and TextDecoder is not available in your platform (they are in browser and will be used automatically if custom text handler is not set).
+
+````javascript
+const textHandler = {
+  encode: function (input) {
+    const buffer = new Uint8Array(input.length)
+    for (let i = 0; i < input.length; i++) {
+      buffer[i] = input.charCodeAt(i)
+    }
+    return buffer
+  },
+  decode: function (input) {
+    const buffer = new Uint8Array(input)
+    return String.fromCharCode(...buffer)
+  }
+}
+
+NetSerializer.setTextHandler(textHandler)

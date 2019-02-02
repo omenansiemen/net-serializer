@@ -18,6 +18,20 @@ const stringHandler = {
 	}
 }
 
+const stringHandlerSimple = {
+	encode: function (input) {
+		const buffer = new Uint8Array(input.length)
+		for (let i = 0; i < input.length; i++) {
+			buffer[i] = input.charCodeAt(i)
+		}
+		return buffer
+	},
+	decode: function (input) {
+		const buffer = new Uint8Array(input)
+		return String.fromCharCode(...buffer)
+	}
+}
+
 NetSerializer.setTextHandler(stringHandler)
 
 /* testi 1 */
