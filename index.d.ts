@@ -5,7 +5,6 @@ export interface IMetaValue {
     preventOverflow?: boolean;
     allowOverflow?: boolean;
     stringMaxLen?: 'uint8' | 'uint16';
-    _value?: number | boolean | Uint8Array;
 }
 interface packExtraParams {
     sharedBuffer?: ArrayBuffer;

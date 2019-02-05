@@ -13,13 +13,16 @@ export interface IMetaValue {
 	preventOverflow?: boolean
 	allowOverflow?: boolean
 	stringMaxLen?: 'uint8' | 'uint16'
-	_value?: number | boolean | Uint8Array
 }
 const isMetaValue = (object: any): object is IMetaValue => typeof object.type === 'string';
 
+interface InternalMetaValue extends IMetaValue {
+	_value?: number | boolean | Uint8Array
+}
+
 interface IRefObject {
 	sizeInBytes: number
-	flatArray: IMetaValue[]
+	flatArray: InternalMetaValue[]
 	buffer?: ArrayBuffer
 }
 
@@ -27,7 +30,7 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 
 	if (isArray(data) && isArray(template)) {
 		// Storing information how many elements are
-		const arrayLength: IMetaValue = { _value: data.length, type: 'uint32' }
+		const arrayLength: InternalMetaValue = { _value: data.length, type: 'uint32' }
 		processMetaValue(refObject, arrayLength);
 		refObject.sizeInBytes += getByteLength(arrayLength)
 		data.forEach((element: any) => {
@@ -57,7 +60,7 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 
 				}
 				const type = templateValue.stringMaxLen ? templateValue.stringMaxLen : 'uint32'
-				const stringLength: IMetaValue = { _value: tmpValue.byteLength, type }
+				const stringLength: InternalMetaValue = { _value: tmpValue.byteLength, type }
 				processMetaValue(refObject, stringLength);
 				refObject.sizeInBytes += getByteLength(stringLength)
 				// Storing value as Uint8Array of bytes
@@ -83,7 +86,7 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 	return refObject
 }
 
-function processMetaValue(refObject: IRefObject, metaValue: IMetaValue) {
+function processMetaValue(refObject: IRefObject, metaValue: InternalMetaValue) {
 	if (refObject.buffer) {
 		addToBuffer({
 			buffer: refObject.buffer,
@@ -96,7 +99,7 @@ function processMetaValue(refObject: IRefObject, metaValue: IMetaValue) {
 	}
 }
 
-const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteOffset: number }) => {
+const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer, byteOffset: number }) => {
 
 	const {
 		metaValue,
@@ -172,7 +175,7 @@ const addToBuffer = (params: { metaValue: IMetaValue, buffer: ArrayBuffer, byteO
 	return byteLength
 }
 
-function getByteLength(value: IMetaValue) {
+function getByteLength(value: InternalMetaValue) {
 	let byteLength;
 	if (value.type === 'int32' || value.type === 'uint32' || value.type === 'float32') {
 		byteLength = 4;
@@ -238,7 +241,7 @@ function unflatten(buffer: ArrayBuffer, template: any, options: { byteOffset: nu
 	return result
 }
 
-function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, byteOffset: number) {
+function getValueFromBuffer(buffer: ArrayBuffer, metaValue: InternalMetaValue, byteOffset: number) {
 
 	let value;
 
