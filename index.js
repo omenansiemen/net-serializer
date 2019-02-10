@@ -5,7 +5,27 @@ const isBoolean = (val) => typeof val === 'boolean';
 const isObject = (val) => typeof val === 'object';
 const isArray = (val) => typeof val === 'object' && Array.isArray(val);
 const isNumber = (val) => (typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)));
-const isMetaValue = (object) => typeof object.type === 'string';
+var Type;
+(function (Type) {
+    Type["i8"] = "int8";
+    Type["u8"] = "uint8";
+    Type["i16"] = "int16";
+    Type["u16"] = "uint16";
+    Type["i32"] = "int32";
+    Type["u32"] = "uint32";
+    Type["f32"] = "float32";
+    Type["f64"] = "float64";
+    Type["bool"] = "boolean";
+    Type["str8"] = "string8";
+    Type["str16"] = "string16";
+    Type["str32"] = "string";
+})(Type = exports.Type || (exports.Type = {}));
+const isMetaValue = (object) => {
+    if (typeof object.type === 'string') {
+        return true;
+    }
+    return false;
+};
 function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) {
     if (isArray(data) && isArray(template)) {
         // Storing information how many elements are
@@ -33,9 +53,13 @@ function flatten(data, template, refObject = { sizeInBytes: 0, flatArray: [] }) 
                 const tmpValue = encodeText(value);
                 const dataCopy = Object.assign({ _value: tmpValue }, templateValue);
                 // Storing length of bytes in string
-                if (templateValue.stringMaxLen) {
+                let type = Type.u32;
+                if (templateValue.type === Type.str8) {
+                    type = Type.u8;
                 }
-                const type = templateValue.stringMaxLen ? templateValue.stringMaxLen : 'uint32';
+                else if (templateValue.type === Type.str16) {
+                    type = Type.u16;
+                }
                 const stringLength = { _value: tmpValue.byteLength, type };
                 processMetaValue(refObject, stringLength);
                 refObject.sizeInBytes += getByteLength(stringLength);
@@ -135,10 +159,13 @@ const addToBuffer = (params) => {
     else if (metaValue.type === 'float32' && isNumber(value)) {
         view.setFloat32(0, value);
     }
+    else if (metaValue.type === 'float64' && isNumber(value)) {
+        view.setFloat64(0, value);
+    }
     else if (metaValue.type === 'boolean' && isBoolean(value)) {
         view.setInt8(0, value === false ? 0 : 1);
     }
-    else if (metaValue.type === 'string' && metaValue._value instanceof Uint8Array) {
+    else if ((metaValue.type === Type.str8 || metaValue.type === Type.str16 || metaValue.type === Type.str32) && metaValue._value instanceof Uint8Array) {
         metaValue._value.forEach((value, slot) => view.setUint8(slot, value));
     }
     else {
@@ -148,7 +175,10 @@ const addToBuffer = (params) => {
 };
 function getByteLength(value) {
     let byteLength;
-    if (value.type === 'int32' || value.type === 'uint32' || value.type === 'float32') {
+    if (value.type === 'float64') {
+        byteLength = 8;
+    }
+    else if (value.type === 'int32' || value.type === 'uint32' || value.type === 'float32') {
         byteLength = 4;
     }
     else if (value.type === 'int16' || value.type === 'uint16') {
@@ -157,17 +187,17 @@ function getByteLength(value) {
     else if (value.type === 'int8' || value.type === 'uint8' || value.type === 'boolean') {
         byteLength = 1;
     }
-    else if (value.type === 'string') {
+    else if (value.type === Type.str8 || value.type === Type.str16 || value.type === Type.str32) {
         if (value._value instanceof Uint8Array) {
             // Flattening
             byteLength = value._value.byteLength;
         }
         else {
             // Unflattening
-            if (value.stringMaxLen === 'uint8') {
+            if (value.type === Type.str8) {
                 byteLength = 1;
             }
-            else if (value.stringMaxLen === 'uint16') {
+            else if (value.type === Type.str16) {
                 byteLength = 2;
             }
             else {
@@ -232,18 +262,21 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
     else if (metaValue.type === 'float32') {
         value = view.getFloat32(0);
     }
+    else if (metaValue.type === 'float64') {
+        value = view.getFloat64(0);
+    }
     else if (metaValue.type === 'boolean') {
         value = view.getInt8(0) === 0 ? false : true;
     }
-    else if (metaValue.type === 'string') {
+    else if (metaValue.type === Type.str8 || metaValue.type === Type.str16 || metaValue.type === Type.str32) {
         let strBufLen;
         let strBufStart;
-        if (metaValue.stringMaxLen === 'uint8') {
+        if (metaValue.type === Type.str8) {
             strBufLen = view.getUint8(0);
             byteLength += strBufLen;
             strBufStart = byteOffset + 1;
         }
-        else if (metaValue.stringMaxLen === 'uint16') {
+        else if (metaValue.type === Type.str16) {
             strBufLen = view.getUint16(0);
             byteLength += strBufLen;
             strBufStart = byteOffset + 2;

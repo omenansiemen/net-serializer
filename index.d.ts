@@ -1,10 +1,23 @@
-declare type MetaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'boolean' | 'string';
+declare type MetaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'float64' | 'boolean' | 'string' | 'string16' | 'string8';
+export declare enum Type {
+    i8 = "int8",
+    u8 = "uint8",
+    i16 = "int16",
+    u16 = "uint16",
+    i32 = "int32",
+    u32 = "uint32",
+    f32 = "float32",
+    f64 = "float64",
+    bool = "boolean",
+    str8 = "string8",
+    str16 = "string16",
+    str32 = "string"
+}
 export interface IMetaValue {
     type: MetaValueType;
     multiplier?: number;
     preventOverflow?: boolean;
     allowOverflow?: boolean;
-    stringMaxLen?: 'uint8' | 'uint16';
 }
 interface packExtraParams {
     sharedBuffer?: ArrayBuffer;

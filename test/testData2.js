@@ -1,5 +1,5 @@
 exports.template = {
-  label: { type: 'string', stringMaxLen: 'uint8' },
+  label: { type: 'string8' },
   objects: [{
     identifier: {
       playerId: { type: 'uint8' },
