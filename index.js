@@ -19,7 +19,7 @@ var Types;
     Types["str8"] = "string8";
     Types["str16"] = "string16";
     Types["str32"] = "string";
-})(Types || (Types = {}));
+})(Types = exports.Types || (exports.Types = {}));
 const isMetaValue = (object) => {
     if (typeof object.type === 'string') {
         return true;

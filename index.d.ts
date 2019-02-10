@@ -1,4 +1,4 @@
-declare enum Types {
+export declare enum Types {
     i8 = "int8",
     u8 = "uint8",
     i16 = "int16",

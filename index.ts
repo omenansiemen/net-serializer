@@ -5,7 +5,7 @@ const isArray = (val: any): val is Array<any> => typeof val === 'object' && Arra
 const isNumber = (val: any): val is number =>
 	(typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)))
 
-enum Types {
+export enum Types {
 	i8 = 'int8',
 	u8 = 'uint8',
 	i16 = 'int16',
