@@ -5,23 +5,37 @@ const isArray = (val: any): val is Array<any> => typeof val === 'object' && Arra
 const isNumber = (val: any): val is number =>
 	(typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)))
 
+const uint8Max = 255
+const int8Min = -128
+const int8Max = 127
+
+const uint16Max = 65535
+const int16Min = -32768
+const int16Max = 32767
+
+const uint32Max = 4294967295
+const int32Min = -2147483648
+const int32Max = 2147483647
+
 export enum Types {
-	i8 = 'int8',
-	u8 = 'uint8',
-	i16 = 'int16',
-	u16 = 'uint16',
-	i32 = 'int32',
-	u32 = 'uint32',
-	f32 = 'float32',
-	f64 = 'float64',
-	bool = 'boolean',
-	str8 = 'string8',
-	str16 = 'string16',
-	str32 = 'string',
+	int8 = 'int8',
+	uint8 = 'uint8',
+	int16 = 'int16',
+	uint16 = 'uint16',
+	int32 = 'int32',
+	uint32 = 'uint32',
+	float32 = 'float32',
+	float64 = 'float64',
+	boolean = 'boolean',
+	string8 = 'string8',
+	string16 = 'string16',
+	string = 'string',
 }
 
+type metaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'float64' | 'boolean' | 'string' | 'string8' | 'string16'
+
 export interface IMetaValue {
-	type: Types
+	type: metaValueType
 	multiplier?: number
 	preventOverflow?: boolean
 	allowOverflow?: boolean
@@ -37,17 +51,35 @@ interface InternalMetaValue extends IMetaValue {
 	_value?: number | boolean | Uint8Array
 }
 
-interface IRefObject {
+interface TemplateOptions {
+	arrayMaxLength: Types.uint8 | Types.uint16 | Types.uint32
+}
+
+interface RefObject {
+	templateOptions: TemplateOptions
 	sizeInBytes: number
 	flatArray: InternalMetaValue[]
 	buffer?: ArrayBuffer
 }
 
-function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes: 0, flatArray: [] }) {
+const defaultTemplateOptions: TemplateOptions = {
+	arrayMaxLength: Types.uint32
+}
+
+const defaultRefObject: RefObject = {
+	sizeInBytes: 0,
+	flatArray: [],
+	templateOptions: defaultTemplateOptions
+}
+
+function flatten(data: any, template: any, refObject: RefObject = defaultRefObject) {
 
 	if (isArray(data) && isArray(template)) {
-		// Storing information how many elements are
-		const arrayLength: InternalMetaValue = { _value: data.length, type: Types.u32 }
+		// Storing information how many elements there are
+		const arrayLength: InternalMetaValue = {
+			_value: data.length,
+			type: refObject.templateOptions.arrayMaxLength
+		}
 		processMetaValue(refObject, arrayLength);
 		refObject.sizeInBytes += getByteLength(arrayLength)
 		data.forEach((element: any) => {
@@ -56,7 +88,7 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 			}
 			else {
 				// Add support for numeric arrays
-				console.warn('Element of the array must be an object')
+				console.warn('Element of the array must be an object (numeric elements are not supported yet)')
 			}
 		})
 	} else {
@@ -67,24 +99,19 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 				flatten(value, templateValue, refObject)
 			}
 			else if (typeof value === 'string' && isMetaValue(templateValue)) {
-				const tmpValue = encodeText(value)
+				const rawValue = encodeText(value)
 				const dataCopy = Object.assign(
-					{ _value: tmpValue },
+					{ _value: rawValue },
 					templateValue
 				)
 				// Storing length of bytes in string
-				let type = Types.u32
-				if (templateValue.type === Types.str8) {
-					type = Types.u8
-				} else if (templateValue.type === Types.str16) {
-					type = Types.u16
-				}
-				const stringLength: InternalMetaValue = { _value: tmpValue.byteLength, type }
+				const type = getTypeForStringLength(templateValue.type, rawValue, key)
+				const stringLength: InternalMetaValue = { _value: rawValue.byteLength, type }
 				processMetaValue(refObject, stringLength);
 				refObject.sizeInBytes += getByteLength(stringLength)
 				// Storing value as Uint8Array of bytes
 				processMetaValue(refObject, dataCopy);
-				refObject.sizeInBytes += tmpValue.byteLength
+				refObject.sizeInBytes += rawValue.byteLength
 			}
 			else if (isNumber(value) && isMetaValue(templateValue)) {
 				const dataCopy = Object.assign(
@@ -105,7 +132,40 @@ function flatten(data: any, template: any, refObject: IRefObject = { sizeInBytes
 	return refObject
 }
 
-function processMetaValue(refObject: IRefObject, metaValue: InternalMetaValue) {
+const getTypeForStringLength = (type: metaValueType, _value: Uint8Array, key: string): Types.uint8 | Types.uint16 | Types.uint32 => {
+	let lenType = Types.uint32
+	const rawLen = _value.byteLength
+	if (type === Types.string8) {
+		// if (rawLen > uint8Max) {
+		// 	throw Error(`in value of property "${key}": string is too long for uint8 slot (${rawLen})`)
+		// }
+		console.assert(
+			_value.byteLength <= uint8Max,
+			`Error in value of property "${key}": string is too long for uint8 slot (${rawLen})`
+		)
+		lenType = Types.uint8
+	} else if (type === Types.string16) {
+		// if (rawLen > uint16Max) {
+		// 	throw Error(`in value of property "${key}": string is too long for uint16 slot (${rawLen})`)
+		// }
+		console.assert(
+			_value.byteLength <= uint8Max,
+			`Error in value of property "${key}": string is too long for uint8 slot (${rawLen})`
+		)
+		lenType = Types.uint16
+	} else if (type === Types.string) {
+		// if (rawLen > uint32Max) {
+		// 	throw Error(`in value of property "${key}": string is too long for uint32 slot (${rawLen})`)
+		// }
+		console.assert(
+			_value.byteLength <= uint8Max,
+			`Error in value of property "${key}": string is too long for uint8 slot (${rawLen})`
+		)
+	}
+	return lenType
+}
+
+function processMetaValue(refObject: RefObject, metaValue: InternalMetaValue) {
 	if (refObject.buffer) {
 		addToBuffer({
 			buffer: refObject.buffer,
@@ -134,61 +194,55 @@ const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer
 		value = metaValue._value * metaValue.multiplier
 	}
 
-	if (metaValue.type === Types.u8 && isNumber(value)) {
+	if (metaValue.type === Types.uint8 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
-			value = (value < 0 ? 0 : (value > 255 ? 255 : value))
-		} else if (!metaValue.allowOverflow) {
-			console.assert(value >= 0 && value <= 255, 'Uint8 overflow', metaValue)
+			value = (value < 0 ? 0 : (value > uint8Max ? uint8Max : value))
 		}
+		console.assert(value >= 0 && value <= uint8Max, 'Uint8 overflow', metaValue)
 		view.setUint8(0, value);
-	} else if (metaValue.type === Types.i8 && isNumber(value)) {
+	} else if (metaValue.type === Types.int8 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
-			value = (value < -128 ? -128 : (value > 127 ? 127 : value))
-		} else if (!metaValue.allowOverflow) {
-			console.assert(value >= -128 && value <= 127, 'Int8 overflow', metaValue)
+			value = (value < int8Min ? int8Min : (value > int8Max ? int8Max : value))
 		}
+		console.assert(value >= int8Min && value <= int8Max, 'Int8 overflow', metaValue)
 		view.setInt8(0, value);
 	}
-	else if (metaValue.type === Types.u16 && isNumber(value)) {
+	else if (metaValue.type === Types.uint16 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
-			value = (value < 0 ? 0 : (value > 65535 ? 65535 : value))
-		} else if (!metaValue.allowOverflow) {
-			console.assert(value >= 0 && value <= 65535, 'Uint16 overflow', metaValue)
+			value = (value < 0 ? 0 : (value > uint16Max ? uint16Max : value))
 		}
-		view.setUint16(0, value < 0 ? 0 : value > 65535 ? 65535 : value);
-	} else if (metaValue.type === Types.i16 && isNumber(value)) {
+		console.assert(value >= 0 && value <= uint16Max, 'Uint16 overflow', metaValue)
+		view.setUint16(0, value);
+	} else if (metaValue.type === Types.int16 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
-			value = (value < -32768 ? -32768 : (value > 32767 ? 32767 : value))
-		} else if (!metaValue.allowOverflow) {
-			console.assert(value >= -32768 && value <= 32767, 'Int16 overflow', metaValue)
+			value = (value < int16Min ? int16Min : (value > int16Max ? int16Max : value))
 		}
+		console.assert(value >= int16Min && value <= int16Max, 'Int16 overflow', metaValue)
 		view.setInt16(0, value);
 	}
-	else if (metaValue.type === Types.u32 && isNumber(value)) {
+	else if (metaValue.type === Types.uint32 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
-			value = (value < 0 ? 0 : (value > 4294967295 ? 4294967295 : value))
-		} else if (!metaValue.allowOverflow) {
-			console.assert(value >= 0 && value <= 4294967295, 'Uint32 overflow', metaValue)
+			value = (value < 0 ? 0 : (value > uint32Max ? uint32Max : value))
 		}
-		view.setUint32(0, value < 0 ? 0 : value > 4294967295 ? 4294967295 : value);
-	} else if (metaValue.type === Types.i32 && isNumber(value)) {
+		console.assert(value >= 0 && value <= uint32Max, 'Uint32 overflow', metaValue)
+		view.setUint32(0, value);
+	} else if (metaValue.type === Types.int32 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
-			value = (value < -2147483648 ? -2147483648 : (value > 2147483647 ? 2147483647 : value))
-		} else if (!metaValue.allowOverflow) {
-			console.assert(value >= -2147483648 && value <= 2147483647, 'Int32 overflow', metaValue)
+			value = (value < int32Min ? int32Min : (value > int32Max ? int32Max : value))
 		}
+		console.assert(value >= int32Min && value <= int32Max, 'Int32 overflow', metaValue)
 		view.setInt32(0, value);
 	}
-	else if (metaValue.type === Types.f32 && isNumber(value)) {
+	else if (metaValue.type === Types.float32 && isNumber(value)) {
 		view.setFloat32(0, value);
 	}
-	else if (metaValue.type === Types.f64 && isNumber(value)) {
+	else if (metaValue.type === Types.float64 && isNumber(value)) {
 		view.setFloat64(0, value);
 	}
-	else if (metaValue.type === Types.bool && isBoolean(value)) {
+	else if (metaValue.type === Types.boolean && isBoolean(value)) {
 		view.setInt8(0, value === false ? 0 : 1);
 	}
-	else if ((metaValue.type === Types.str8 || metaValue.type === Types.str16 || metaValue.type === Types.str32) && metaValue._value instanceof Uint8Array) {
+	else if ((metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) && metaValue._value instanceof Uint8Array) {
 		metaValue._value.forEach((value, slot) => view.setUint8(slot, value))
 	}
 	else {
@@ -199,27 +253,28 @@ const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer
 
 function getByteLength(value: InternalMetaValue) {
 	let byteLength;
-	if (value.type === Types.f64) {
+	if (value.type === Types.float64) {
 		byteLength = 8;
 	}
-	else if (value.type === Types.i32 || value.type === Types.u32 || value.type === Types.f32) {
+	else if (value.type === Types.int32 || value.type === Types.uint32 || value.type === Types.float32) {
 		byteLength = 4;
 	}
-	else if (value.type === Types.i16 || value.type === Types.u16) {
+	else if (value.type === Types.int16 || value.type === Types.uint16) {
 		byteLength = 2;
 	}
-	else if (value.type === Types.i8 || value.type === Types.u8 || value.type === Types.bool) {
+	else if (value.type === Types.int8 || value.type === Types.uint8 || value.type === Types.boolean) {
 		byteLength = 1;
 	}
-	else if (value.type === Types.str8 || value.type === Types.str16 || value.type === Types.str32) {
+	else if (value.type === Types.string8 || value.type === Types.string16 || value.type === Types.string) {
 		if (value._value instanceof Uint8Array) {
 			// Flattening
+
 			byteLength = value._value.byteLength
 		} else {
 			// Unflattening
-			if (value.type === Types.str8) {
+			if (value.type === Types.string8) {
 				byteLength = 1
-			} else if (value.type === Types.str16) {
+			} else if (value.type === Types.string16) {
 				byteLength = 2
 			} else {
 				byteLength = 4 // Slot for length of the text as bytes
@@ -231,7 +286,7 @@ function getByteLength(value: InternalMetaValue) {
 	return byteLength;
 }
 
-function unflatten(buffer: ArrayBuffer, template: any, options: { byteOffset: number }) {
+function unflatten(buffer: ArrayBuffer, template: any, options: { byteOffset: number, templateOptions: TemplateOptions }) {
 
 	let result: any
 
@@ -239,7 +294,7 @@ function unflatten(buffer: ArrayBuffer, template: any, options: { byteOffset: nu
 		result = [];
 		const { value: length, byteOffset: newOffset } = getValueFromBuffer(
 			buffer,
-			{ type: Types.u32 },
+			{ type: options.templateOptions.arrayMaxLength },
 			options.byteOffset
 		)
 		options.byteOffset = newOffset
@@ -274,38 +329,38 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: InternalMetaValue, b
 	console.assert(byteOffset + byteLength <= buffer.byteLength, `${byteOffset} + ${byteLength} <= ${buffer.byteLength}`)
 	var view = new DataView(buffer, byteOffset, byteLength)
 
-	if (metaValue.type === Types.u8) {
+	if (metaValue.type === Types.uint8) {
 		value = view.getUint8(0)
-	} else if (metaValue.type === Types.i8) {
+	} else if (metaValue.type === Types.int8) {
 		value = view.getInt8(0)
 	}
-	else if (metaValue.type === Types.u16) {
+	else if (metaValue.type === Types.uint16) {
 		value = view.getUint16(0)
-	} else if (metaValue.type === Types.i16) {
+	} else if (metaValue.type === Types.int16) {
 		value = view.getInt16(0)
 	}
-	else if (metaValue.type === Types.u32) {
+	else if (metaValue.type === Types.uint32) {
 		value = view.getUint32(0)
-	} else if (metaValue.type === Types.i32) {
+	} else if (metaValue.type === Types.int32) {
 		value = view.getInt32(0)
 	}
-	else if (metaValue.type === Types.f32) {
+	else if (metaValue.type === Types.float32) {
 		value = view.getFloat32(0)
 	}
-	else if (metaValue.type === Types.f64) {
+	else if (metaValue.type === Types.float64) {
 		value = view.getFloat64(0)
 	}
-	else if (metaValue.type === Types.bool) {
+	else if (metaValue.type === Types.boolean) {
 		value = view.getInt8(0) === 0 ? false : true
 	}
-	else if (metaValue.type === Types.str8 || metaValue.type === Types.str16 || metaValue.type === Types.str32) {
+	else if (metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) {
 		let strBufLen: number
 		let strBufStart: number
-		if (metaValue.type === Types.str8) {
+		if (metaValue.type === Types.string8) {
 			strBufLen = view.getUint8(0)
 			byteLength += strBufLen
 			strBufStart = byteOffset + 1
-		} else if (metaValue.type === Types.str16) {
+		} else if (metaValue.type === Types.string16) {
 			strBufLen = view.getUint16(0)
 			byteLength += strBufLen
 			strBufStart = byteOffset + 2
@@ -332,17 +387,25 @@ interface packExtraParams {
 	sharedBuffer?: ArrayBuffer
 	returnCopy?: boolean
 }
-export const pack = (objects: any, template: any, extra: packExtraParams = {}) => {
+
+export const pack = (object: any, template: any, extra: packExtraParams = {}) => {
 
 	const {
 		sharedBuffer,
 		returnCopy = false,
 	} = extra
 
-	let { sizeInBytes, flatArray } = flatten(objects, template, {
+	let templateOptions = defaultTemplateOptions
+	if (typeof template._netSerializer_ === 'object') {
+		templateOptions = { ...templateOptions, ...template._netSerializer_.options }
+		template = template._netSerializer_.template
+	}
+
+	let { sizeInBytes, flatArray } = flatten(object, template, {
 		sizeInBytes: 0,
 		flatArray: [],
 		buffer: sharedBuffer,
+		templateOptions,
 	})
 
 	let buffer: ArrayBuffer
@@ -369,7 +432,12 @@ export const pack = (objects: any, template: any, extra: packExtraParams = {}) =
 }
 
 export const unpack = (buffer: ArrayBuffer, template: any): any => {
-	return unflatten(buffer, template, { byteOffset: 0 })
+	let templateOptions = defaultTemplateOptions
+	if (typeof template._netSerializer_ === 'object') {
+		templateOptions = { ...templateOptions, ...template._netSerializer_.options }
+		template = template._netSerializer_.template
+	}
+	return unflatten(buffer, template, { byteOffset: 0, templateOptions })
 }
 
 type TDecodeText = (input: ArrayBuffer) => string
