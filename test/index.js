@@ -46,6 +46,7 @@ const obj = NetSerializer.unpack(aBuf, testData.template)
 // console.log(util.inspect(obj, false, null, true))
 
 if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj)) {
+	console.error('Data 1 is corrupted!')
 	process.exit(1)
 }
 
@@ -69,6 +70,7 @@ const obj2 = NetSerializer.unpack(aBuf2, testData.template)
 // console.log(util.inspect(obj2, false, null, true))
 
 if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj2)) {
+	console.error('Data 2 is corrupted!')
 	process.exit(1)
 }
 
@@ -76,5 +78,6 @@ if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj2)) {
 
 const obj3 = NetSerializer.unpack(aBuf2, testData.template)
 if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj3)) {
+	console.error('Data 3 is corrupted!')
 	process.exit(1)
 }

@@ -45,6 +45,7 @@ const defaultRefObject = {
 };
 function flatten(data, template, refObject = defaultRefObject) {
     if (isArray(data) && isArray(template)) {
+        assertArrayLength(refObject, data);
         // Storing information how many elements there are
         const arrayLength = {
             _value: data.length,
@@ -73,7 +74,8 @@ function flatten(data, template, refObject = defaultRefObject) {
                 const rawValue = encodeText(value);
                 const dataCopy = Object.assign({ _value: rawValue }, templateValue);
                 // Storing length of bytes in string
-                const type = getTypeForStringLength(templateValue.type, rawValue, key);
+                assertStringLength(templateValue.type, rawValue, key);
+                const type = getTypeForStringLength(templateValue.type);
                 const stringLength = { _value: rawValue.byteLength, type };
                 processMetaValue(refObject, stringLength);
                 refObject.sizeInBytes += getByteLength(stringLength);
@@ -96,31 +98,37 @@ function flatten(data, template, refObject = defaultRefObject) {
     }
     return refObject;
 }
-const getTypeForStringLength = (type, _value, key) => {
-    let lenType = Types.uint32;
-    const rawLen = _value.byteLength;
+const getTypeForStringLength = (type) => {
     if (type === Types.string8) {
-        // if (rawLen > uint8Max) {
-        // 	throw Error(`in value of property "${key}": string is too long for uint8 slot (${rawLen})`)
-        // }
-        console.assert(_value.byteLength <= uint8Max, `Error in value of property "${key}": string is too long for uint8 slot (${rawLen})`);
-        lenType = Types.uint8;
+        return Types.uint8;
     }
     else if (type === Types.string16) {
-        // if (rawLen > uint16Max) {
-        // 	throw Error(`in value of property "${key}": string is too long for uint16 slot (${rawLen})`)
-        // }
-        console.assert(_value.byteLength <= uint8Max, `Error in value of property "${key}": string is too long for uint8 slot (${rawLen})`);
-        lenType = Types.uint16;
+        return Types.uint16;
+    }
+    return Types.uint32;
+};
+function assertStringLength(type, rawValue, key) {
+    if (type === Types.string8) {
+        console.assert(rawValue.byteLength <= uint8Max, `Error in value of property "${key}": string is too long for uint8 slot (${rawValue.byteLength})`);
+    }
+    else if (type === Types.string16) {
+        console.assert(rawValue.byteLength <= uint16Max, `Error in value of property "${key}": string is too long for uint16 slot (${rawValue.byteLength})`);
     }
     else if (type === Types.string) {
-        // if (rawLen > uint32Max) {
-        // 	throw Error(`in value of property "${key}": string is too long for uint32 slot (${rawLen})`)
-        // }
-        console.assert(_value.byteLength <= uint8Max, `Error in value of property "${key}": string is too long for uint8 slot (${rawLen})`);
+        console.assert(rawValue.byteLength <= uint32Max, `Error in value of property "${key}": string is too long for uint32 slot (${rawValue.byteLength})`);
     }
-    return lenType;
-};
+}
+function assertArrayLength(refObject, data) {
+    if (refObject.templateOptions.arrayMaxLength === Types.uint8) {
+        console.assert(data.length <= uint8Max, `Array is too long (${data.length}) for the length type uint8`);
+    }
+    else if (refObject.templateOptions.arrayMaxLength === Types.uint16) {
+        console.assert(data.length <= uint16Max, `Array is too long (${data.length}) for the length type uint16`);
+    }
+    else if (refObject.templateOptions.arrayMaxLength === Types.uint32) {
+        console.assert(data.length <= uint32Max, `Array is too long (${data.length}) for the length type uint32`);
+    }
+}
 function processMetaValue(refObject, metaValue) {
     if (refObject.buffer) {
         addToBuffer({
