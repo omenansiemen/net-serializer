@@ -24,7 +24,8 @@ exports.data = Array.from({ length: numberOfItems }).map(() => ({
       angle: 1.168204866279076
     },
     visible: true
-  }]
+  }],
+  timestamp: Infinity,
 }))
 
 exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
@@ -48,5 +49,6 @@ exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
       angle: 1.1681441944407733
     },
     visible: true
-  }]
+  }],
+  timestamp: 6553500,
 }))

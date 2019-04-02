@@ -2,8 +2,7 @@ const isUndefined = (val: any): val is undefined => typeof val === 'undefined';
 const isBoolean = (val: any): val is boolean => typeof val === 'boolean';
 const isObject = (val: any): val is object => typeof val === 'object';
 const isArray = (val: any): val is Array<any> => typeof val === 'object' && Array.isArray(val);
-const isNumber = (val: any): val is number =>
-	(typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)))
+const isNumber = (val: any): val is number => typeof val === 'number'
 
 const uint8Max = 255
 const int8Min = -128
@@ -115,7 +114,7 @@ function flatten(data: any, template: any, refObject: RefObject = defaultRefObje
 				processMetaValue(refObject, dataCopy);
 				refObject.sizeInBytes += rawValue.byteLength
 			}
-			else if (isNumber(value) && isMetaValue(templateValue)) {
+			else if ((isNumber(value) || isBoolean(value)) && isMetaValue(templateValue)) {
 				const dataCopy = Object.assign(
 					{ _value: value },
 					templateValue
@@ -204,13 +203,17 @@ const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer
 		value = metaValue._value * metaValue.multiplier
 	}
 
-	if (metaValue.type === Types.uint8 && isNumber(value)) {
+	if (metaValue.type === Types.boolean && isBoolean(value)) {
+		view.setInt8(0, value === false ? 0 : 1);
+	}
+	else if (metaValue.type === Types.uint8 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint8Max ? uint8Max : value))
 		}
 		console.assert(value >= 0 && value <= uint8Max, 'Uint8 overflow', metaValue)
 		view.setUint8(0, value);
-	} else if (metaValue.type === Types.int8 && isNumber(value)) {
+	}
+	else if (metaValue.type === Types.int8 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < int8Min ? int8Min : (value > int8Max ? int8Max : value))
 		}
@@ -223,7 +226,8 @@ const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer
 		}
 		console.assert(value >= 0 && value <= uint16Max, 'Uint16 overflow', metaValue)
 		view.setUint16(0, value);
-	} else if (metaValue.type === Types.int16 && isNumber(value)) {
+	}
+	else if (metaValue.type === Types.int16 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < int16Min ? int16Min : (value > int16Max ? int16Max : value))
 		}
@@ -236,7 +240,8 @@ const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer
 		}
 		console.assert(value >= 0 && value <= uint32Max, 'Uint32 overflow', metaValue)
 		view.setUint32(0, value);
-	} else if (metaValue.type === Types.int32 && isNumber(value)) {
+	}
+	else if (metaValue.type === Types.int32 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < int32Min ? int32Min : (value > int32Max ? int32Max : value))
 		}
@@ -249,15 +254,13 @@ const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer
 	else if (metaValue.type === Types.float64 && isNumber(value)) {
 		view.setFloat64(0, value);
 	}
-	else if (metaValue.type === Types.boolean && isBoolean(value)) {
-		view.setInt8(0, value === false ? 0 : 1);
-	}
-	else if ((metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) && metaValue._value instanceof Uint8Array) {
-		metaValue._value.forEach((value, slot) => view.setUint8(slot, value))
-	}
-	else {
-		console.error('Unknown metaValue.type', metaValue.type, value)
-	}
+	else
+		if ((metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) && metaValue._value instanceof Uint8Array) {
+			metaValue._value.forEach((value, slot) => view.setUint8(slot, value))
+		}
+		else {
+			console.error('Unknown metaValue.type', metaValue.type, value)
+		}
 	return byteLength
 }
 

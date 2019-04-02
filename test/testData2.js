@@ -20,7 +20,12 @@ exports.template = {
           angle: { type: 'uint16', multiplier: 65535 / (2 * Math.PI) }
         },
         visible: { type: 'boolean' }
-      }]
-    }]
+      }],
+      timestamp: {
+        type: 'uint16',
+        multiplier: 0.01, // To precision of tenth of a second
+        preventOverflow: true,
+      },
+    }],
   }
 }

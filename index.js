@@ -4,7 +4,7 @@ const isUndefined = (val) => typeof val === 'undefined';
 const isBoolean = (val) => typeof val === 'boolean';
 const isObject = (val) => typeof val === 'object';
 const isArray = (val) => typeof val === 'object' && Array.isArray(val);
-const isNumber = (val) => (typeof val === 'number' && isFinite(val)) || (val !== '' && isFinite(Number(val)));
+const isNumber = (val) => typeof val === 'number';
 const uint8Max = 255;
 const int8Min = -128;
 const int8Max = 127;
@@ -83,7 +83,7 @@ function flatten(data, template, refObject = defaultRefObject) {
                 processMetaValue(refObject, dataCopy);
                 refObject.sizeInBytes += rawValue.byteLength;
             }
-            else if (isNumber(value) && isMetaValue(templateValue)) {
+            else if ((isNumber(value) || isBoolean(value)) && isMetaValue(templateValue)) {
                 const dataCopy = Object.assign({ _value: value }, templateValue);
                 processMetaValue(refObject, dataCopy);
                 refObject.sizeInBytes += getByteLength(templateValue);
@@ -149,7 +149,10 @@ const addToBuffer = (params) => {
     if (isNumber(metaValue.multiplier) && isNumber(metaValue._value)) {
         value = metaValue._value * metaValue.multiplier;
     }
-    if (metaValue.type === Types.uint8 && isNumber(value)) {
+    if (metaValue.type === Types.boolean && isBoolean(value)) {
+        view.setInt8(0, value === false ? 0 : 1);
+    }
+    else if (metaValue.type === Types.uint8 && isNumber(value)) {
         if (metaValue.preventOverflow) {
             value = (value < 0 ? 0 : (value > uint8Max ? uint8Max : value));
         }
@@ -196,9 +199,6 @@ const addToBuffer = (params) => {
     }
     else if (metaValue.type === Types.float64 && isNumber(value)) {
         view.setFloat64(0, value);
-    }
-    else if (metaValue.type === Types.boolean && isBoolean(value)) {
-        view.setInt8(0, value === false ? 0 : 1);
     }
     else if ((metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) && metaValue._value instanceof Uint8Array) {
         metaValue._value.forEach((value, slot) => view.setUint8(slot, value));
