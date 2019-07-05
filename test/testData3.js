@@ -4,6 +4,7 @@ const text = 'Väinämöinen Väinämöinen \n'
 const numberOfItems = 255
 
 exports.data = Array.from({ length: numberOfItems }).map(() => ({
+  numbers: [],
   label: text,
   objects: [{
     identifier: { playerId: 1, serial: 1910 },
@@ -29,6 +30,7 @@ exports.data = Array.from({ length: numberOfItems }).map(() => ({
 }))
 
 exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
+  numbers: [],
   label: text,
   objects: [{
     identifier: { playerId: 1, serial: 1910 },

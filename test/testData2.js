@@ -2,6 +2,7 @@ exports.template = {
   _netSerializer_: {
     options: { arrayMaxLength: 'uint8'},
     template: [{
+      numbers: [{value: { type: 'boolean' }}],
       label: { type: 'string8' },
       objects: [{
         identifier: {
