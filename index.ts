@@ -399,6 +399,7 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: InternalMetaValue, b
 interface packExtraParams {
 	sharedBuffer?: ArrayBuffer
 	returnCopy?: boolean
+	freeBytes?: number
 }
 
 export const pack = (object: any, template: any, extra: packExtraParams = {}) => {
@@ -406,6 +407,7 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 	const {
 		sharedBuffer,
 		returnCopy = false,
+		freeBytes = 0,
 	} = extra
 
 	let templateOptions = defaultTemplateOptions
@@ -425,7 +427,7 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 	if (typeof sharedBuffer !== 'undefined') {
 		buffer = sharedBuffer
 	} else {
-		buffer = new ArrayBuffer(sizeInBytes)
+		buffer = new ArrayBuffer(sizeInBytes + freeBytes)
 	}
 
 	// flatArray is empty if sharedBuffer is given

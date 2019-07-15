@@ -333,7 +333,7 @@ function getValueFromBuffer(buffer, metaValue, byteOffset) {
     return { value, byteOffset: byteOffset + byteLength };
 }
 exports.pack = (object, template, extra = {}) => {
-    const { sharedBuffer, returnCopy = false, } = extra;
+    const { sharedBuffer, returnCopy = false, freeBytes = 0, } = extra;
     let templateOptions = defaultTemplateOptions;
     if (typeof template._netSerializer_ === 'object') {
         templateOptions = Object.assign({}, templateOptions, template._netSerializer_.options);
@@ -350,7 +350,7 @@ exports.pack = (object, template, extra = {}) => {
         buffer = sharedBuffer;
     }
     else {
-        buffer = new ArrayBuffer(sizeInBytes);
+        buffer = new ArrayBuffer(sizeInBytes + freeBytes);
     }
     // flatArray is empty if sharedBuffer is given
     let byteOffset = 0;
