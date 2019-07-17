@@ -37,7 +37,6 @@ export interface IMetaValue {
 	type: metaValueType
 	multiplier?: number
 	preventOverflow?: boolean
-	allowOverflow?: boolean
 }
 const isMetaValue = (object: any): object is IMetaValue => {
 	if (typeof object.type === 'string') {
@@ -210,42 +209,36 @@ const addToBuffer = (params: { metaValue: InternalMetaValue, buffer: ArrayBuffer
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint8Max ? uint8Max : value))
 		}
-		console.assert(value >= 0 && value <= uint8Max, 'Uint8 overflow', metaValue)
 		view.setUint8(0, value);
 	}
 	else if (metaValue.type === Types.int8 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < int8Min ? int8Min : (value > int8Max ? int8Max : value))
 		}
-		console.assert(value >= int8Min && value <= int8Max, 'Int8 overflow', metaValue)
 		view.setInt8(0, value);
 	}
 	else if (metaValue.type === Types.uint16 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint16Max ? uint16Max : value))
 		}
-		console.assert(value >= 0 && value <= uint16Max, 'Uint16 overflow', metaValue)
 		view.setUint16(0, value);
 	}
 	else if (metaValue.type === Types.int16 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < int16Min ? int16Min : (value > int16Max ? int16Max : value))
 		}
-		console.assert(value >= int16Min && value <= int16Max, 'Int16 overflow', metaValue)
 		view.setInt16(0, value);
 	}
 	else if (metaValue.type === Types.uint32 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint32Max ? uint32Max : value))
 		}
-		console.assert(value >= 0 && value <= uint32Max, 'Uint32 overflow', metaValue)
 		view.setUint32(0, value);
 	}
 	else if (metaValue.type === Types.int32 && isNumber(value)) {
 		if (metaValue.preventOverflow) {
 			value = (value < int32Min ? int32Min : (value > int32Max ? int32Max : value))
 		}
-		console.assert(value >= int32Min && value <= int32Max, 'Int32 overflow', metaValue)
 		view.setInt32(0, value);
 	}
 	else if (metaValue.type === Types.float32 && isNumber(value)) {

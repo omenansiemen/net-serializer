@@ -17,7 +17,6 @@ export interface IMetaValue {
     type: metaValueType;
     multiplier?: number;
     preventOverflow?: boolean;
-    allowOverflow?: boolean;
 }
 interface packExtraParams {
     sharedBuffer?: ArrayBuffer;
