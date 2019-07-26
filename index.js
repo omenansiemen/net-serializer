@@ -239,14 +239,18 @@ function getByteLength(value) {
     }
     return byteLength;
 }
-function unflatten(buffer, template, options) {
+function unflatten(buffer, template, options, firstCall = false) {
     let result;
     if (isArray(template)) {
         result = [];
         const { value: length, byteOffset: newOffset } = getValueFromBuffer(buffer, { type: options.templateOptions.arrayMaxLength }, options.byteOffset);
         options.byteOffset = newOffset;
         for (let i = 0; i < length; i++) {
-            result.push(unflatten(buffer, template[0], options));
+            const item = unflatten(buffer, template[0], options);
+            if (firstCall && typeof options.templateOptions.arrayCallback === 'function') {
+                options.templateOptions.arrayCallback(item);
+            }
+            result.push(item);
         }
     }
     else {
@@ -366,7 +370,7 @@ exports.unpack = (buffer, template) => {
         templateOptions = Object.assign({}, templateOptions, template._netSerializer_.options);
         template = template._netSerializer_.template;
     }
-    return unflatten(buffer, template, { byteOffset: 0, templateOptions });
+    return unflatten(buffer, template, { byteOffset: 0, templateOptions }, true);
 };
 const MakeDecoderFn = (decoder) => (input) => decoder.decode(input);
 let decodeText;

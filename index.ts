@@ -51,6 +51,7 @@ interface InternalMetaValue extends IMetaValue {
 
 interface TemplateOptions {
 	arrayMaxLength: Types.uint8 | Types.uint16 | Types.uint32
+	arrayCallback?: (item: any) => void
 }
 
 interface RefObject {
@@ -292,7 +293,12 @@ function getByteLength(value: InternalMetaValue) {
 	return byteLength;
 }
 
-function unflatten(buffer: ArrayBuffer, template: any, options: { byteOffset: number, templateOptions: TemplateOptions }) {
+function unflatten(
+	buffer: ArrayBuffer,
+	template: any,
+	options: { byteOffset: number, templateOptions: TemplateOptions },
+	firstCall = false
+) {
 
 	let result: any
 
@@ -305,7 +311,11 @@ function unflatten(buffer: ArrayBuffer, template: any, options: { byteOffset: nu
 		)
 		options.byteOffset = newOffset
 		for (let i = 0; i < length; i++) {
-			result.push(unflatten(buffer, template[0], options))
+			const item = unflatten(buffer, template[0], options);
+			if (firstCall && typeof options.templateOptions.arrayCallback === 'function') {
+				options.templateOptions.arrayCallback(item)
+			}
+			result.push(item)
 		}
 	} else {
 		result = {};
@@ -445,7 +455,7 @@ export const unpack = (buffer: ArrayBuffer, template: any): any => {
 		templateOptions = { ...templateOptions, ...template._netSerializer_.options }
 		template = template._netSerializer_.template
 	}
-	return unflatten(buffer, template, { byteOffset: 0, templateOptions })
+	return unflatten(buffer, template, { byteOffset: 0, templateOptions }, true)
 }
 
 type TDecodeText = (input: ArrayBuffer) => string

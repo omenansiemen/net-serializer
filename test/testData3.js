@@ -1,7 +1,7 @@
 exports.template = require('./testData2').template
 
 const text = 'Väinämöinen Väinämöinen \n'
-const numberOfItems = 255
+const numberOfItems = 1
 
 exports.data = Array.from({ length: numberOfItems }).map(() => ({
   numbers: [],

@@ -74,9 +74,12 @@ if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj2)) {
 	process.exit(1)
 }
 
-/* testing copy is correct */
-
-const obj3 = NetSerializer.unpack(aBuf2, testData.template)
+/* testing array callback function works */
+const obj3 = []
+testData.template._netSerializer_.options.arrayCallback = (item) => {
+	obj3.push(item)
+}
+NetSerializer.unpack(aBuf2, testData.template)
 if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj3)) {
 	console.error('Data 3 is corrupted!')
 	process.exit(1)
