@@ -11,9 +11,9 @@
   "author": "Tatu Anttonen <tatu.anttonen@gmail.com>",
   "license": "ISC",
   "devDependencies": {
-    "typescript": "^3.0.3",
     "lz-string": "^1.4.4",
-    "text-encoding": "^0.6.4"
+    "text-encoding": "^0.6.4",
+    "typescript": "^3.7.2"
   },
   "repository": {
     "type": "git",
