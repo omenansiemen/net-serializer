@@ -4,7 +4,8 @@ exports.template = {
       arrayMaxLength: 'uint8',
     },
     template: [{
-      numbers: [{ value: { type: 'boolean' } }],
+      numbers: [{ type: 'int8' }],
+      numbersAsObject: [{ value: { type: 'int8' } }],
       label: { type: 'string8' },
       objects: [{
         identifier: {

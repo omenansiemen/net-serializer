@@ -1,5 +1,5 @@
 const NetSerializer = require('../index')
-const testData = require('./testData3')
+const testData = require('./testData')
 // const testData = {data: {val: true}, template: {val: {type: 'boolean'}}}
 const lz = require("lz-string")
 const TextEncoder = require('text-encoding').TextEncoder
@@ -33,6 +33,8 @@ const stringHandlerSimple = {
 }
 
 NetSerializer.setTextHandler(stringHandler)
+
+console.time('full test time')
 
 /* testi 1 */
 // console.log('Test 1, creating buffer')
@@ -84,3 +86,5 @@ if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj3)) {
 	console.error('Data 3 is corrupted!')
 	process.exit(1)
 }
+
+console.timeEnd('full test time')

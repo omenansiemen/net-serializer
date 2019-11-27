@@ -87,13 +87,12 @@ function flatten(data: any, template: any, refObject: RefObject = defaultRefObje
 				flatten(element, template[0], refObject)
 			}
 			else {
-				// Add support for numeric arrays
-				console.warn('Element of the array must be an object (numeric elements are not supported yet)')
+				flatten(element, template, refObject)
 			}
 		})
 	} else {
 		Object.keys(template).forEach(key => {
-			const value = data[key]
+			const value = data[key] ?? data
 			const templateValue = template[key]
 			if (isObject(value)) {
 				flatten(value, templateValue, refObject)
@@ -126,7 +125,9 @@ function flatten(data: any, template: any, refObject: RefObject = defaultRefObje
 				if (isUndefined(value)) {
 					console.warn('Template property', key, 'is not found from data', data)
 				}
-				console.error('This error must be fixed! Otherwise unflattening won\'t work.')
+				console.error('This error must be fixed! Otherwise unflattening won\'t work. Details below.')
+				console.debug('data:', data, 'template:', template, 'key of template:', key)
+				console.debug('is template[key] metavalue', isMetaValue(templateValue))
 			}
 		})
 	}
@@ -319,20 +320,30 @@ function unflatten(
 		}
 	} else {
 		result = {};
-		Object.keys(template).forEach(key => {
-			if (isMetaValue(template[key])) {
-				const { value, byteOffset: newOffset } = getValueFromBuffer(
-					buffer,
-					template[key],
-					options.byteOffset
-				)
-				options.byteOffset = newOffset
-				Object.assign(result, { [key]: value })
-			} else {
-				const obj = unflatten(buffer, template[key], options)
-				Object.assign(result, { [key]: obj })
-			}
-		})
+		if (isMetaValue(template)) {
+			const { value, byteOffset: newOffset } = getValueFromBuffer(
+				buffer,
+				template,
+				options.byteOffset
+			)
+			options.byteOffset = newOffset
+			result = value
+		} else {
+			Object.keys(template).forEach(key => {
+				if (isMetaValue(template[key])) {
+					const { value, byteOffset: newOffset } = getValueFromBuffer(
+						buffer,
+						template[key],
+						options.byteOffset
+					)
+					options.byteOffset = newOffset
+					result[key] = value
+				} else {
+					const obj = unflatten(buffer, template[key], options)
+					result[key] = obj
+				}
+			})
+		}
 	}
 	return result
 }
