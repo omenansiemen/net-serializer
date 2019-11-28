@@ -38,21 +38,15 @@ const isMetaValue = (object) => {
 const defaultTemplateOptions = {
     arrayMaxLength: Types.uint32
 };
-const defaultRefObject = {
-    sizeInBytes: 0,
-    flatArray: [],
-    templateOptions: defaultTemplateOptions
-};
-function flatten(data, template, refObject = defaultRefObject) {
+function flatten(data, template, refObject) {
     if (isArray(data) && isArray(template)) {
         assertArrayLength(refObject, data);
         // Storing information how many elements there are
         const arrayLength = {
-            _value: data.length,
             type: refObject.templateOptions.arrayMaxLength
         };
-        processMetaValue(refObject, arrayLength);
-        refObject.sizeInBytes += getByteLength(arrayLength);
+        processMetaValue(refObject, arrayLength, data.length);
+        refObject.byteOffset += getByteLength(arrayLength, data.length);
         data.forEach((element) => {
             if (isObject(element)) {
                 flatten(element, template[0], refObject);
@@ -72,21 +66,19 @@ function flatten(data, template, refObject = defaultRefObject) {
             }
             else if (typeof value === 'string' && isMetaValue(templateValue)) {
                 const rawValue = encodeText(value);
-                const dataCopy = Object.assign({ _value: rawValue }, templateValue);
-                // Storing length of bytes in string
+                // Storing length of bytes of string
                 assertStringLength(templateValue.type, rawValue, key);
                 const type = getTypeForStringLength(templateValue.type);
-                const stringLength = { _value: rawValue.byteLength, type };
-                processMetaValue(refObject, stringLength);
-                refObject.sizeInBytes += getByteLength(stringLength);
+                const stringLength = { type };
+                processMetaValue(refObject, stringLength, rawValue.byteLength);
+                refObject.byteOffset += getByteLength(stringLength, rawValue.byteLength);
                 // Storing value as Uint8Array of bytes
-                processMetaValue(refObject, dataCopy);
-                refObject.sizeInBytes += rawValue.byteLength;
+                processMetaValue(refObject, templateValue, rawValue);
+                refObject.byteOffset += rawValue.byteLength;
             }
             else if ((isNumber(value) || isBoolean(value)) && isMetaValue(templateValue)) {
-                const dataCopy = Object.assign({ _value: value }, templateValue);
-                processMetaValue(refObject, dataCopy);
-                refObject.sizeInBytes += getByteLength(templateValue);
+                processMetaValue(refObject, templateValue, value);
+                refObject.byteOffset += getByteLength(templateValue, value);
             }
             else {
                 if (isUndefined(value)) {
@@ -98,8 +90,48 @@ function flatten(data, template, refObject = defaultRefObject) {
             }
         });
     }
-    return refObject;
 }
+const calculateBufferSize = (data, template, options, size = 0) => {
+    if (isArray(data) && isArray(template)) {
+        // Storing information how many elements there are
+        const arrayLength = {
+            type: options.arrayMaxLength
+        };
+        size += getByteLength(arrayLength, data.length);
+        for (let element of data) {
+            if (isObject(element)) {
+                size += calculateBufferSize(element, template[0], options) * data.length;
+            }
+            else {
+                size += calculateBufferSize(element, template, options) * data.length;
+            }
+            break;
+        }
+    }
+    else {
+        Object.keys(template).forEach(key => {
+            var _a;
+            const value = (_a = data[key], (_a !== null && _a !== void 0 ? _a : data));
+            const templateValue = template[key];
+            if (isObject(value)) {
+                size += calculateBufferSize(value, templateValue, options);
+            }
+            else if (typeof value === 'string' && isMetaValue(templateValue)) {
+                const rawValue = encodeText(value);
+                // Storing length of bytes of string
+                const type = getTypeForStringLength(templateValue.type);
+                const stringLength = { type };
+                size += getByteLength(stringLength, rawValue.byteLength);
+                // Storing value as Uint8Array of bytes
+                size += rawValue.byteLength;
+            }
+            else if ((isNumber(value) || isBoolean(value)) && isMetaValue(templateValue)) {
+                size += getByteLength(templateValue, value);
+            }
+        });
+    }
+    return size;
+};
 const getTypeForStringLength = (type) => {
     if (type === Types.string8) {
         return Types.uint8;
@@ -131,25 +163,20 @@ function assertArrayLength(refObject, data) {
         console.assert(data.length <= uint32Max, `Array is too long (${data.length}) for the length type uint32`);
     }
 }
-function processMetaValue(refObject, metaValue) {
-    if (refObject.buffer) {
-        addToBuffer({
-            buffer: refObject.buffer,
-            metaValue,
-            byteOffset: refObject.sizeInBytes
-        });
-    }
-    else {
-        refObject.flatArray.push(metaValue);
-    }
+function processMetaValue(refObject, metaValue, value) {
+    addToBuffer({
+        metaValue,
+        refObject,
+        value
+    });
 }
 const addToBuffer = (params) => {
-    const { metaValue, buffer, byteOffset } = params;
-    const byteLength = getByteLength(metaValue);
-    const view = new DataView(buffer, byteOffset, byteLength);
-    let value = metaValue._value;
-    if (isNumber(metaValue.multiplier) && isNumber(metaValue._value)) {
-        value = metaValue._value * metaValue.multiplier;
+    const { metaValue, refObject } = params;
+    let value = params.value;
+    const byteLength = getByteLength(metaValue, value);
+    const view = new DataView(refObject.buffer, refObject.byteOffset, byteLength);
+    if (isNumber(metaValue.multiplier) && isNumber(value)) {
+        value = value * metaValue.multiplier;
     }
     if (metaValue.type === Types.boolean && isBoolean(value)) {
         view.setInt8(0, value === false ? 0 : 1);
@@ -196,39 +223,46 @@ const addToBuffer = (params) => {
     else if (metaValue.type === Types.float64 && isNumber(value)) {
         view.setFloat64(0, value);
     }
-    else if ((metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) && metaValue._value instanceof Uint8Array) {
-        metaValue._value.forEach((value, slot) => view.setUint8(slot, value));
-    }
     else {
-        console.error('Unknown metaValue.type', metaValue.type, value);
+        if (metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) {
+            if (value instanceof Uint8Array) {
+                value.forEach((value, slot) => view.setUint8(slot, value));
+            }
+            else {
+                console.error('Unknown metaValue.type', metaValue.type, value);
+            }
+        }
+        else {
+            console.error('Unknown metaValue.type', metaValue.type, value);
+        }
     }
     return byteLength;
 };
-function getByteLength(value) {
+function getByteLength(metaValue, value) {
     let byteLength;
-    if (value.type === Types.float64) {
+    if (metaValue.type === Types.float64) {
         byteLength = 8;
     }
-    else if (value.type === Types.int32 || value.type === Types.uint32 || value.type === Types.float32) {
+    else if (metaValue.type === Types.int32 || metaValue.type === Types.uint32 || metaValue.type === Types.float32) {
         byteLength = 4;
     }
-    else if (value.type === Types.int16 || value.type === Types.uint16) {
+    else if (metaValue.type === Types.int16 || metaValue.type === Types.uint16) {
         byteLength = 2;
     }
-    else if (value.type === Types.int8 || value.type === Types.uint8 || value.type === Types.boolean) {
+    else if (metaValue.type === Types.int8 || metaValue.type === Types.uint8 || metaValue.type === Types.boolean) {
         byteLength = 1;
     }
-    else if (value.type === Types.string8 || value.type === Types.string16 || value.type === Types.string) {
-        if (value._value instanceof Uint8Array) {
+    else if (metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) {
+        if (value instanceof Uint8Array) {
             // Flattening
-            byteLength = value._value.byteLength;
+            byteLength = value.byteLength;
         }
         else {
             // Unflattening
-            if (value.type === Types.string8) {
+            if (metaValue.type === Types.string8) {
                 byteLength = 1;
             }
-            else if (value.type === Types.string16) {
+            else if (metaValue.type === Types.string16) {
                 byteLength = 2;
             }
             else {
@@ -237,7 +271,7 @@ function getByteLength(value) {
         }
     }
     else {
-        throw Error(`Unknown type: ${value.type}`);
+        throw Error(`Unknown type: ${metaValue.type}`);
     }
     return byteLength;
 }
@@ -346,12 +380,7 @@ exports.pack = (object, template, extra = {}) => {
         templateOptions = Object.assign(Object.assign({}, templateOptions), template._netSerializer_.options);
         template = template._netSerializer_.template;
     }
-    let { sizeInBytes, flatArray } = flatten(object, template, {
-        sizeInBytes: 0,
-        flatArray: [],
-        buffer: sharedBuffer,
-        templateOptions,
-    });
+    const sizeInBytes = calculateBufferSize(object, template, templateOptions);
     let buffer;
     if (typeof sharedBuffer !== 'undefined') {
         buffer = sharedBuffer;
@@ -359,14 +388,10 @@ exports.pack = (object, template, extra = {}) => {
     else {
         buffer = new ArrayBuffer(sizeInBytes + freeBytes);
     }
-    // flatArray is empty if sharedBuffer is given
-    let byteOffset = 0;
-    flatArray.forEach(metaValue => {
-        byteOffset += addToBuffer({
-            buffer,
-            metaValue,
-            byteOffset,
-        });
+    flatten(object, template, {
+        byteOffset: 0,
+        buffer,
+        templateOptions,
     });
     if (typeof sharedBuffer !== 'undefined' && returnCopy) {
         return buffer.slice(0, sizeInBytes);
