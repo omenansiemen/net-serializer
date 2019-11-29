@@ -67,7 +67,7 @@ const defaultTemplateOptions: TemplateOptions = {
 function flatten(data: any, template: any, refObject: RefObject) {
 
 	if (isArray(data) && isArray(template)) {
-		assertArrayLength(refObject, data);
+		// assertArrayLength(refObject, data);
 		// Storing information how many elements there are
 		const arrayLength: InternalMetaValue = {
 			type: refObject.templateOptions.arrayMaxLength
@@ -92,7 +92,7 @@ function flatten(data: any, template: any, refObject: RefObject) {
 			else if (typeof value === 'string' && isMetaValue(templateValue)) {
 				const rawValue = encodeText(value)
 				// Storing length of bytes of string
-				assertStringLength(templateValue.type, rawValue, key)
+				// assertStringLength(templateValue.type, rawValue, key)
 				const type = getTypeForStringLength(templateValue.type)
 				const stringLength: InternalMetaValue = { type }
 				processMetaValue(refObject, stringLength, rawValue.byteLength);
@@ -377,7 +377,7 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: InternalMetaValue, b
 	let value;
 
 	let byteLength = getByteLength(metaValue)
-	console.assert(byteOffset + byteLength <= buffer.byteLength, `${byteOffset} + ${byteLength} <= ${buffer.byteLength}`)
+	// console.assert(byteOffset + byteLength <= buffer.byteLength, `${byteOffset} + ${byteLength} <= ${buffer.byteLength}`)
 	var view = new DataView(buffer, byteOffset, byteLength)
 
 	if (metaValue.type === Types.uint8) {

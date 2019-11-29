@@ -40,7 +40,7 @@ const defaultTemplateOptions = {
 };
 function flatten(data, template, refObject) {
     if (isArray(data) && isArray(template)) {
-        assertArrayLength(refObject, data);
+        // assertArrayLength(refObject, data);
         // Storing information how many elements there are
         const arrayLength = {
             type: refObject.templateOptions.arrayMaxLength
@@ -67,7 +67,7 @@ function flatten(data, template, refObject) {
             else if (typeof value === 'string' && isMetaValue(templateValue)) {
                 const rawValue = encodeText(value);
                 // Storing length of bytes of string
-                assertStringLength(templateValue.type, rawValue, key);
+                // assertStringLength(templateValue.type, rawValue, key)
                 const type = getTypeForStringLength(templateValue.type);
                 const stringLength = { type };
                 processMetaValue(refObject, stringLength, rawValue.byteLength);
@@ -315,7 +315,7 @@ function unflatten(buffer, template, options, firstCall = false) {
 function getValueFromBuffer(buffer, metaValue, byteOffset) {
     let value;
     let byteLength = getByteLength(metaValue);
-    console.assert(byteOffset + byteLength <= buffer.byteLength, `${byteOffset} + ${byteLength} <= ${buffer.byteLength}`);
+    // console.assert(byteOffset + byteLength <= buffer.byteLength, `${byteOffset} + ${byteLength} <= ${buffer.byteLength}`)
     var view = new DataView(buffer, byteOffset, byteLength);
     if (metaValue.type === Types.uint8) {
         value = view.getUint8(0);
