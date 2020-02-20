@@ -3,17 +3,24 @@
   "version": "3.4.0",
   "description": "Type aware object serializer for sending structured data efficiently over network. Uses template object to describe which properties will be serialized into binary data buffer.",
   "main": "index.js",
+  "module": "index.esm.js",
   "types": "index.d.ts",
   "scripts": {
     "test": "node test/index.js",
-    "build": "tsc && npm run test"
+    "build": "rollup -c && npm run test"
   },
   "author": "Tatu Anttonen <tatu.anttonen@gmail.com>",
   "license": "ISC",
+  "dependencies": {
+    "rollup": "^1.31.1",
+    "rollup-plugin-terser": "^5.2.0",
+    "typescript": "^3.7.5"
+  },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^3.0.0",
     "lz-string": "^1.4.4",
     "text-encoding": "^0.6.4",
-    "typescript": "^3.7.2"
+    "tslib": "^1.10.0"
   },
   "repository": {
     "type": "git",
