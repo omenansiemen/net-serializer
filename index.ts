@@ -1,6 +1,6 @@
 const isUndefined = (val: any): val is undefined => typeof val === 'undefined';
 const isBoolean = (val: any): val is boolean => typeof val === 'boolean';
-const isObject = (val: any): val is object => typeof val === 'object';
+const isObject = (val: any): val is object => val !== null && typeof val === 'object';
 const isArray = (val: any): val is Array<any> => typeof val === 'object' && Array.isArray(val);
 const isNumber = (val: any): val is number => typeof val === 'number'
 
@@ -89,21 +89,21 @@ function flatten(data: any, template: any, refObject: RefObject) {
 			if (isObject(value)) {
 				flatten(value, templateValue, refObject)
 			}
-			else if (typeof value === 'string' && isMetaValue(templateValue)) {
+			else if (isNumber(value) || isBoolean(value)) {
+				processMetaValue(refObject, templateValue, value)
+				refObject.byteOffset += getByteLength(templateValue, value)
+			}
+			else if (typeof value === 'string') {
 				const rawValue = encodeText(value)
 				// Storing length of bytes of string
 				// assertStringLength(templateValue.type, rawValue, key)
 				const type = getTypeForStringLength(templateValue.type)
 				const stringLength: InternalMetaValue = { type }
-				processMetaValue(refObject, stringLength, rawValue.byteLength);
+				processMetaValue(refObject, stringLength, rawValue.byteLength)
 				refObject.byteOffset += getByteLength(stringLength, rawValue.byteLength)
 				// Storing value as Uint8Array of bytes
-				processMetaValue(refObject, templateValue, rawValue);
+				processMetaValue(refObject, templateValue, rawValue)
 				refObject.byteOffset += rawValue.byteLength
-			}
-			else if ((isNumber(value) || isBoolean(value)) && isMetaValue(templateValue)) {
-				processMetaValue(refObject, templateValue, value);
-				refObject.byteOffset += getByteLength(templateValue, value)
 			}
 			else {
 				if (isUndefined(value)) {
@@ -140,7 +140,10 @@ const calculateBufferSize = (data: any, template: any, options: TemplateOptions,
 			if (isObject(value)) {
 				size += calculateBufferSize(value, templateValue, options)
 			}
-			else if (typeof value === 'string' && isMetaValue(templateValue)) {
+			else if (isNumber(value) || isBoolean(value)) {
+				size += getByteLength(templateValue, value)
+			}
+			else if (typeof value === 'string') {
 				const rawValue = encodeText(value)
 				// Storing length of bytes of string
 				const type = getTypeForStringLength(templateValue.type)
@@ -148,9 +151,6 @@ const calculateBufferSize = (data: any, template: any, options: TemplateOptions,
 				size += getByteLength(stringLength, rawValue.byteLength)
 				// Storing value as Uint8Array of bytes
 				size += rawValue.byteLength
-			}
-			else if ((isNumber(value) || isBoolean(value)) && isMetaValue(templateValue)) {
-				size += getByteLength(templateValue, value)
 			}
 		})
 	}
@@ -224,49 +224,49 @@ const addToBuffer = (params: {
 		value = value * metaValue.multiplier
 	}
 
-	if (metaValue.type === Types.boolean && isBoolean(value)) {
-		view.setInt8(0, value === false ? 0 : 1);
-	}
-	else if (metaValue.type === Types.uint8 && isNumber(value)) {
+	if (metaValue.type === Types.uint8) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint8Max ? uint8Max : value))
 		}
 		view.setUint8(0, value);
 	}
-	else if (metaValue.type === Types.int8 && isNumber(value)) {
+	else if (metaValue.type === Types.int8) {
 		if (metaValue.preventOverflow) {
 			value = (value < int8Min ? int8Min : (value > int8Max ? int8Max : value))
 		}
 		view.setInt8(0, value);
 	}
-	else if (metaValue.type === Types.uint16 && isNumber(value)) {
+	else if (metaValue.type === Types.boolean) {
+		view.setInt8(0, value === false ? 0 : 1);
+	}
+	else if (metaValue.type === Types.uint16) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint16Max ? uint16Max : value))
 		}
 		view.setUint16(0, value);
 	}
-	else if (metaValue.type === Types.int16 && isNumber(value)) {
+	else if (metaValue.type === Types.int16) {
 		if (metaValue.preventOverflow) {
 			value = (value < int16Min ? int16Min : (value > int16Max ? int16Max : value))
 		}
 		view.setInt16(0, value);
 	}
-	else if (metaValue.type === Types.uint32 && isNumber(value)) {
+	else if (metaValue.type === Types.uint32) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint32Max ? uint32Max : value))
 		}
 		view.setUint32(0, value);
 	}
-	else if (metaValue.type === Types.int32 && isNumber(value)) {
+	else if (metaValue.type === Types.int32) {
 		if (metaValue.preventOverflow) {
 			value = (value < int32Min ? int32Min : (value > int32Max ? int32Max : value))
 		}
 		view.setInt32(0, value);
 	}
-	else if (metaValue.type === Types.float32 && isNumber(value)) {
+	else if (metaValue.type === Types.float32) {
 		view.setFloat32(0, value);
 	}
-	else if (metaValue.type === Types.float64 && isNumber(value)) {
+	else if (metaValue.type === Types.float64) {
 		view.setFloat64(0, value);
 	}
 	else {
@@ -286,17 +286,15 @@ const addToBuffer = (params: {
 
 function getByteLength(metaValue: Readonly<InternalMetaValue>, value?: any) {
 	let byteLength;
-	if (metaValue.type === Types.float64) {
-		byteLength = 8;
-	}
-	else if (metaValue.type === Types.int32 || metaValue.type === Types.uint32 || metaValue.type === Types.float32) {
-		byteLength = 4;
+
+	if (metaValue.type === Types.int8 || metaValue.type === Types.uint8 || metaValue.type === Types.boolean) {
+		byteLength = 1;
 	}
 	else if (metaValue.type === Types.int16 || metaValue.type === Types.uint16) {
 		byteLength = 2;
 	}
-	else if (metaValue.type === Types.int8 || metaValue.type === Types.uint8 || metaValue.type === Types.boolean) {
-		byteLength = 1;
+	else if (metaValue.type === Types.int32 || metaValue.type === Types.uint32 || metaValue.type === Types.float32) {
+		byteLength = 4;
 	}
 	else if (metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) {
 		if (value instanceof Uint8Array) {
@@ -312,7 +310,11 @@ function getByteLength(metaValue: Readonly<InternalMetaValue>, value?: any) {
 				byteLength = 4 // Slot for length of the text as bytes
 			}
 		}
-	} else {
+	}
+	else if (metaValue.type === Types.float64) {
+		byteLength = 8;
+	}
+	else {
 		throw Error(`Unknown type: ${metaValue.type}`)
 	}
 	return byteLength;
@@ -455,14 +457,14 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 	}
 
 	const sizeInBytes = calculateBufferSize(object, template, templateOptions)
-	
+
 	let buffer: ArrayBuffer
 	if (typeof sharedBuffer !== 'undefined') {
 		buffer = sharedBuffer
 	} else {
 		buffer = new ArrayBuffer(sizeInBytes + freeBytes)
 	}
-	
+
 	flatten(object, template, {
 		byteOffset: 0,
 		buffer,
