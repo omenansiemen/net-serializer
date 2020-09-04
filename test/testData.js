@@ -6,7 +6,7 @@ const numbers = Array(255).fill(-1)
 const numbersAsObject = numbers.map(n => ({ value: n }))
 
 exports.data = Array.from({ length: numberOfItems }).map(() => ({
-  numbers,
+  emptyArray: [],
   numbersAsObject,
   label: text,
   objects: [{
@@ -33,7 +33,7 @@ exports.data = Array.from({ length: numberOfItems }).map(() => ({
 }))
 
 exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
-  numbers,
+  emptyArray: [],
   numbersAsObject,
   label: text,
   objects: [{

@@ -41,6 +41,7 @@ console.time('full test time')
 // console.log(util.inspect(testData.data, false, null, true))
 
 const aBuf = NetSerializer.pack(testData.data, testData.template)
+console.log('Data size in bytes', aBuf.byteLength)
 // console.log(aBuf)
 // console.log(new TextEncoder().encode(JSON.stringify(testData.data)).byteLength)
 
@@ -57,9 +58,16 @@ if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj)) {
 // console.log(util.inspect(testData.data, false, null, true))
 
 // const sharedBuffer = new ArrayBuffer(50)
-const aBuf2 = NetSerializer.pack(testData.data, testData.template, {
+let aBuf2 = NetSerializer.pack(testData.data, testData.template, {
 	/* sharedBuffer, returnCopy: true */
 })
+console.time('perf test time')
+for (let i = 0; i < 10; i++) {
+	aBuf2 = NetSerializer.pack(testData.data, testData.template, {
+		/* sharedBuffer, returnCopy: true */
+	})
+}
+console.timeEnd('perf test time')
 
 // if (sharedBuffer.byteLength !== aBuf2.byteLength) {
 // 	process.exit(1)
@@ -78,13 +86,16 @@ if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj2)) {
 
 /* testing array callback function works */
 const obj3 = []
-testData.template._netSerializer_.options.arrayCallback = (item) => {
+testData.template[1].unpackCallback = (item) => {
 	obj3.push(item)
 }
-NetSerializer.unpack(aBuf2, testData.template)
+const result3 = NetSerializer.unpack(aBuf2, testData.template)
 if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj3)) {
 	console.error('Data 3 is corrupted!')
 	process.exit(1)
+}
+if (result3.length > 0) {
+	console.error('Data 3 result should be empty array because it is handled by unpack callback function')
 }
 
 console.timeEnd('full test time')
