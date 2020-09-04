@@ -7,7 +7,8 @@
   "types": "index.d.ts",
   "scripts": {
     "test": "node test/index.js",
-    "build": "rollup -c && npm run test"
+    "declaration": "tsc --declaration --emitDeclarationOnly",
+    "build": "rollup -c && npm run test && npm run declaration"
   },
   "author": "Tatu Anttonen <tatu.anttonen@gmail.com>",
   "license": "ISC",
