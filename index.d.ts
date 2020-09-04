@@ -18,6 +18,11 @@ export interface IMetaValue {
     multiplier?: number;
     preventOverflow?: boolean;
 }
+interface ArrayOptions {
+    lengthType?: Types.uint8 | Types.uint16 | Types.uint32;
+    unpackCallback?: (item: any) => any;
+}
+export declare type ArrayTemplate = [any, ArrayOptions?];
 interface packExtraParams {
     sharedBuffer?: ArrayBuffer;
     returnCopy?: boolean;

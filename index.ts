@@ -2,6 +2,7 @@ const isUndefined = (val: any): val is undefined => typeof val === 'undefined';
 const isBoolean = (val: any): val is boolean => typeof val === 'boolean';
 const isObject = (val: any): val is object => val !== null && typeof val === 'object';
 const isArray = (val: any): val is Array<any> => typeof val === 'object' && Array.isArray(val);
+const isArrayTemplate = (val: any): val is ArrayTemplate => isArray(val) && (val.length === 1 || val.length === 2);
 const isNumber = (val: any): val is number => typeof val === 'number'
 
 const uint8Max = 255
@@ -49,42 +50,33 @@ interface InternalMetaValue extends IMetaValue {
 	_value?: number | boolean | Uint8Array
 }
 
-interface TemplateOptions {
-	arrayMaxLength: Types.uint8 | Types.uint16 | Types.uint32
-	arrayCallback?: (item: any) => void
+interface ArrayOptions {
+	lengthType?: Types.uint8 | Types.uint16 | Types.uint32
+	unpackCallback?: (item: any) => any
 }
 
+export type ArrayTemplate = [any, ArrayOptions?]
+
 interface RefObject {
-	templateOptions: TemplateOptions
 	byteOffset: number
 	buffer: ArrayBuffer
 }
 
-const defaultTemplateOptions: TemplateOptions = {
-	arrayMaxLength: Types.uint32
-}
-
 function flatten(data: any, template: any, refObject: RefObject) {
 
-	if (isArray(data) && isArray(template)) {
-		// assertArrayLength(refObject, data);
+	if (isArray(data) && isArrayTemplate(template)) {
 		// Storing information how many elements there are
-		const arrayLength: InternalMetaValue = {
-			type: refObject.templateOptions.arrayMaxLength
+		const arraySize: InternalMetaValue = {
+			type: template[1]?.lengthType ?? Types.uint32
 		}
-		processMetaValue(refObject, arrayLength, data.length);
-		refObject.byteOffset += getByteLength(arrayLength, data.length)
+		processMetaValue(refObject, arraySize, data.length);
+		refObject.byteOffset += getByteLength(arraySize, data.length)
 		data.forEach((element: any) => {
-			if (isObject(element)) {
-				flatten(element, template[0], refObject)
-			}
-			else {
-				flatten(element, template, refObject)
-			}
+			flatten(element, template[0], refObject)
 		})
 	} else {
 		Object.keys(template).forEach(key => {
-			const value = data[key] ?? data
+			const value = data[key]
 			const templateValue = template[key]
 			if (isObject(value)) {
 				flatten(value, templateValue, refObject)
@@ -117,28 +109,23 @@ function flatten(data: any, template: any, refObject: RefObject) {
 	}
 }
 
-const calculateBufferSize = (data: any, template: any, options: TemplateOptions, size = 0) => {
+const calculateBufferSize = (data: any, template: any, size = 0) => {
 
-	if (isArray(data) && isArray(template)) {
+	if (isArray(data) && isArrayTemplate(template)) {
 		// Storing information how many elements there are
-		const arrayLength: InternalMetaValue = {
-			type: options.arrayMaxLength
+		const arraySize: InternalMetaValue = {
+			type: template[1]?.lengthType ?? Types.uint32
 		}
-		size += getByteLength(arrayLength, data.length)
-		for (let element of data) {
-			if (isObject(element)) {
-				size += calculateBufferSize(element, template[0], options) * data.length
-			} else {
-				size += calculateBufferSize(element, template, options) * data.length
-			}
-			break
+		size += getByteLength(arraySize, data.length)
+		if (data.length > 0) {
+			size += calculateBufferSize(data[0], template[0]) * data.length
 		}
 	} else {
 		Object.keys(template).forEach(key => {
-			const value = data[key] ?? data
+			const value = data[key]
 			const templateValue = template[key]
 			if (isObject(value)) {
-				size += calculateBufferSize(value, templateValue, options)
+				size += calculateBufferSize(value, templateValue)
 			}
 			else if (isNumber(value) || isBoolean(value)) {
 				size += getByteLength(templateValue, value)
@@ -164,38 +151,6 @@ const getTypeForStringLength = (type: metaValueType): Types.uint8 | Types.uint16
 		return Types.uint16
 	}
 	return Types.uint32
-}
-
-function assertStringLength(type: metaValueType, rawValue: Uint8Array, key: string) {
-	if (type === Types.string8) {
-		console.assert(rawValue.byteLength <= uint8Max,
-			`Error in value of property "${key}": string is too long for uint8 slot (${rawValue.byteLength})`
-		)
-	} else if (type === Types.string16) {
-		console.assert(rawValue.byteLength <= uint16Max,
-			`Error in value of property "${key}": string is too long for uint16 slot (${rawValue.byteLength})`
-		)
-	} else if (type === Types.string) {
-		console.assert(rawValue.byteLength <= uint32Max,
-			`Error in value of property "${key}": string is too long for uint32 slot (${rawValue.byteLength})`
-		)
-	}
-}
-
-function assertArrayLength(refObject: RefObject, data: any[]) {
-	if (refObject.templateOptions.arrayMaxLength === Types.uint8) {
-		console.assert(data.length <= uint8Max,
-			`Array is too long (${data.length}) for the length type uint8`
-		);
-	} else if (refObject.templateOptions.arrayMaxLength === Types.uint16) {
-		console.assert(data.length <= uint16Max,
-			`Array is too long (${data.length}) for the length type uint16`
-		);
-	} else if (refObject.templateOptions.arrayMaxLength === Types.uint32) {
-		console.assert(data.length <= uint32Max,
-			`Array is too long (${data.length}) for the length type uint32`
-		);
-	}
 }
 
 function processMetaValue(refObject: RefObject, metaValue: Readonly<InternalMetaValue>, value: any) {
@@ -285,7 +240,8 @@ const addToBuffer = (params: {
 }
 
 function getByteLength(metaValue: Readonly<InternalMetaValue>, value?: any) {
-	let byteLength;
+
+	let byteLength = 0;
 
 	if (metaValue.type === Types.int8 || metaValue.type === Types.uint8 || metaValue.type === Types.boolean) {
 		byteLength = 1;
@@ -323,26 +279,30 @@ function getByteLength(metaValue: Readonly<InternalMetaValue>, value?: any) {
 function unflatten(
 	buffer: ArrayBuffer,
 	template: any,
-	options: { byteOffset: number, templateOptions: TemplateOptions },
-	firstCall = false
+	options: { byteOffset: number },
 ) {
 
 	let result: any
 
-	if (isArray(template)) {
+	if (isArrayTemplate(template)) {
 		result = [];
 		const { value: length, byteOffset: newOffset } = getValueFromBuffer(
 			buffer,
-			{ type: options.templateOptions.arrayMaxLength },
+			{ type: template[1]?.lengthType ?? Types.uint32 },
 			options.byteOffset
 		)
 		options.byteOffset = newOffset
+		const itemCallback = template[1]?.unpackCallback ?? null
 		for (let i = 0; i < length; i++) {
-			const item = unflatten(buffer, template[0], options);
-			if (firstCall && typeof options.templateOptions.arrayCallback === 'function') {
-				options.templateOptions.arrayCallback(item)
+			let item = unflatten(buffer, template[0], options);
+			if (itemCallback) {
+				item = itemCallback(item)
+				if (typeof item !== 'undefined' && item !== null) {
+					result.push(item)
+				}
+			} else {
+				result.push(item)
 			}
-			result.push(item)
 		}
 	} else {
 		result = {};
@@ -450,13 +410,7 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 		freeBytes = 0,
 	} = extra
 
-	let templateOptions = defaultTemplateOptions
-	if (typeof template._netSerializer_ === 'object') {
-		templateOptions = { ...templateOptions, ...template._netSerializer_.options }
-		template = template._netSerializer_.template
-	}
-
-	const sizeInBytes = calculateBufferSize(object, template, templateOptions)
+	const sizeInBytes = calculateBufferSize(object, template)
 
 	let buffer: ArrayBuffer
 	if (typeof sharedBuffer !== 'undefined') {
@@ -468,7 +422,6 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 	flatten(object, template, {
 		byteOffset: 0,
 		buffer,
-		templateOptions,
 	})
 
 	if (typeof sharedBuffer !== 'undefined' && returnCopy) {
@@ -478,12 +431,7 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 }
 
 export const unpack = (buffer: ArrayBuffer, template: any): any => {
-	let templateOptions = defaultTemplateOptions
-	if (typeof template._netSerializer_ === 'object') {
-		templateOptions = { ...templateOptions, ...template._netSerializer_.options }
-		template = template._netSerializer_.template
-	}
-	return unflatten(buffer, template, { byteOffset: 0, templateOptions }, true)
+	return unflatten(buffer, template, { byteOffset: 0 })
 }
 
 type TDecodeText = (input: ArrayBuffer) => string
