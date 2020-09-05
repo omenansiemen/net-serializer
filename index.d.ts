@@ -23,10 +23,12 @@ interface ArrayOptions {
     unpackCallback?: (item: any) => any;
 }
 export declare type ArrayTemplate = [any, ArrayOptions?];
+export declare const calculateBufferSize: (data: any, template: any, size?: number) => number;
 interface packExtraParams {
     sharedBuffer?: ArrayBuffer;
     returnCopy?: boolean;
     freeBytes?: number;
+    bufferSizeInBytes?: number;
 }
 export declare const pack: (object: any, template: any, extra?: packExtraParams) => ArrayBuffer;
 export declare const unpack: (buffer: ArrayBuffer, template: any) => any;
@@ -38,7 +40,10 @@ export declare const setTextHandler: (handler: ITextHandler) => void;
 declare const NetSerializer: {
     pack: (object: any, template: any, extra?: packExtraParams) => ArrayBuffer;
     unpack: (buffer: ArrayBuffer, template: any) => any;
-    setTextHandler: (handler: ITextHandler) => void;
-    Types: typeof Types;
+    utils: {
+        setTextHandler: (handler: ITextHandler) => void;
+        calculateBufferSize: (data: any, template: any, size?: number) => number;
+        Types: typeof Types;
+    };
 };
 export default NetSerializer;

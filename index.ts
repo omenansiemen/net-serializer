@@ -109,7 +109,7 @@ function flatten(data: any, template: any, refObject: RefObject) {
 	}
 }
 
-const calculateBufferSize = (data: any, template: any, size = 0) => {
+export const calculateBufferSize = (data: any, template: any, size = 0) => {
 
 	if (isArray(data) && isArrayTemplate(template)) {
 		// Storing information how many elements there are
@@ -400,6 +400,7 @@ interface packExtraParams {
 	sharedBuffer?: ArrayBuffer
 	returnCopy?: boolean
 	freeBytes?: number
+	bufferSizeInBytes?: number
 }
 
 export const pack = (object: any, template: any, extra: packExtraParams = {}) => {
@@ -408,9 +409,10 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 		sharedBuffer,
 		returnCopy = false,
 		freeBytes = 0,
+		bufferSizeInBytes,
 	} = extra
 
-	const sizeInBytes = calculateBufferSize(object, template)
+	const sizeInBytes = bufferSizeInBytes ?? calculateBufferSize(object, template)
 
 	let buffer: ArrayBuffer
 	if (typeof sharedBuffer !== 'undefined') {
@@ -472,7 +474,10 @@ export const setTextHandler = (handler: ITextHandler) => {
 const NetSerializer = {
 	pack,
 	unpack,
-	setTextHandler,
-	Types,
+	utils: {
+		setTextHandler,
+		calculateBufferSize,
+		Types,
+	}
 }
 export default NetSerializer
