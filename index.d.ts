@@ -22,7 +22,7 @@ interface ArrayOptions {
     lengthType?: Types.uint8 | Types.uint16 | Types.uint32;
     unpackCallback?: (item: any) => any;
 }
-export declare type ArrayTemplate = [any, ArrayOptions?];
+export declare type ArrayTemplate<T = any> = [T, ArrayOptions?];
 export declare const calculateBufferSize: (data: any, template: any, size?: number) => number;
 interface packExtraParams {
     sharedBuffer?: ArrayBuffer;

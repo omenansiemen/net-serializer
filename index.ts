@@ -55,7 +55,7 @@ interface ArrayOptions {
 	unpackCallback?: (item: any) => any
 }
 
-export type ArrayTemplate = [any, ArrayOptions?]
+export type ArrayTemplate<T = any> = [T, ArrayOptions?]
 
 interface RefObject {
 	byteOffset: number
