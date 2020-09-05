@@ -29,6 +29,7 @@ interface packExtraParams {
     returnCopy?: boolean;
     freeBytes?: number;
     bufferSizeInBytes?: number;
+    onErrorCallback?: (error: string) => void;
 }
 export declare const pack: (object: any, template: any, extra?: packExtraParams) => ArrayBuffer;
 export declare const unpack: (buffer: ArrayBuffer, template: any) => any;
