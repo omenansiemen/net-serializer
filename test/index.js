@@ -40,7 +40,9 @@ console.time('full test time')
 // console.log('Test 1, creating buffer')
 // console.log(util.inspect(testData.data, false, null, true))
 
-const aBuf = NetSerializer.pack(testData.data, testData.template)
+const aBuf = NetSerializer.pack(testData.data, testData.template, {
+	onErrorCallback: error => console.error(error)
+})
 console.log('Data size in bytes', aBuf.byteLength)
 // console.log(aBuf)
 // console.log(new TextEncoder().encode(JSON.stringify(testData.data)).byteLength)

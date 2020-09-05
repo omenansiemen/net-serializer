@@ -2,7 +2,8 @@ const NST = require('../index').Types
 
 exports.template = [{
   emptyArray: [{ value: { type: NST.int8 } }],
-  numbersAsObject: [{ value: { type: NST.int8 } }],
+  numberArray: [{ type: NST.uint8 }],
+  numbersAsObject: [{ type: { type: NST.int8 } }],
   label: { type: NST.string8 },
   objects: [{
     identifier: {

@@ -3,10 +3,11 @@ exports.template = require('./templates').template
 const text = 'Väinämöinen Väinämöinen \n'
 const numberOfItems = 255
 const numbers = Array(255).fill(-1)
-const numbersAsObject = numbers.map(n => ({ value: n }))
+const numbersAsObject = numbers.map(n => ({ type: n }))
 
 exports.data = Array.from({ length: numberOfItems }).map(() => ({
   emptyArray: [],
+  numberArray: [45,6,34,160],
   numbersAsObject,
   label: text,
   objects: [{
@@ -34,6 +35,7 @@ exports.data = Array.from({ length: numberOfItems }).map(() => ({
 
 exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
   emptyArray: [],
+  numberArray: [45,6,34,160],
   numbersAsObject,
   label: text,
   objects: [{
