@@ -80,7 +80,7 @@ function flatten(data: any, template: any, refObject: RefObject) {
 			}
 		} else {
 			for (let element of data) {
-				if (!flatten(element, template[0], refObject)) return false;
+				flatten(element, template[0], refObject)
 			}
 		}
 	} else {
@@ -88,7 +88,7 @@ function flatten(data: any, template: any, refObject: RefObject) {
 			const value = data[key]
 			const templateValue = template[key]
 			if (isObject(value)) {
-				if (!flatten(value, templateValue, refObject)) return false;
+				flatten(value, templateValue, refObject)
 			}
 			else if (isNumber(value) || isBoolean(value)) {
 				addToBuffer(refObject, templateValue, value)
@@ -113,12 +113,10 @@ function flatten(data: any, template: any, refObject: RefObject) {
 				console.error('This error must be fixed! Otherwise unflattening won\'t work. Details below.')
 				console.debug('data:', data, 'template:', template, 'key of template:', key)
 				console.debug('is template[key] metavalue', isMetaValue(templateValue))
-				return false
+				throw Error(refObject.error)
 			}
 		}
 	}
-
-	return true
 }
 
 export const calculateBufferSize = (data: any, template: any, size = 0) => {
@@ -158,7 +156,7 @@ export const calculateBufferSize = (data: any, template: any, size = 0) => {
 			}
 		})
 	}
-	
+
 	return size
 }
 
@@ -408,8 +406,8 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 		buffer,
 		error: '',
 	}
-	const success = flatten(object, template, ref)
-	if (!success && typeof extra.onErrorCallback === 'function') {
+	flatten(object, template, ref)
+	if (ref.error.length > 0 && typeof extra.onErrorCallback === 'function') {
 		extra.onErrorCallback(ref.error)
 	}
 
