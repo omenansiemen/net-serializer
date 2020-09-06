@@ -60,7 +60,7 @@ export type ArrayTemplate<T = any> = [T, ArrayOptions?]
 interface RefObject {
 	byteOffset: number
 	buffer: ArrayBuffer
-	error: string
+	onErrorCallback?: (error: string) => void
 }
 
 function flatten(data: any, template: any, refObject: RefObject) {
@@ -107,13 +107,17 @@ function flatten(data: any, template: any, refObject: RefObject) {
 				refObject.byteOffset += rawValue.byteLength
 			}
 			else {
+				let error = ''
 				if (isUndefined(value)) {
-					refObject.error = `Template property ${key}, is not found from data ${data}`
+					error = `Template property ${key}, is not found from data ${data}`
 				}
 				console.error('This error must be fixed! Otherwise unflattening won\'t work. Details below.')
 				console.debug('data:', data, 'template:', template, 'key of template:', key)
 				console.debug('is template[key] metavalue', isMetaValue(templateValue))
-				throw Error(refObject.error)
+				if (typeof refObject.onErrorCallback === 'function') {
+					refObject.onErrorCallback(error)
+				}
+				throw Error(error)
 			}
 		}
 	}
@@ -404,12 +408,9 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 	const ref = {
 		byteOffset: 0,
 		buffer,
-		error: '',
+		onErrorCallback: extra.onErrorCallback,
 	}
 	flatten(object, template, ref)
-	if (ref.error.length > 0 && typeof extra.onErrorCallback === 'function') {
-		extra.onErrorCallback(ref.error)
-	}
 
 	if (typeof sharedBuffer !== 'undefined' && returnCopy) {
 		return buffer.slice(0, sizeInBytes)
