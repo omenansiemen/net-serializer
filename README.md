@@ -49,7 +49,7 @@ const template = {
 }
 ```
 
-With the above template the following data can be serialized.
+With the above template the following data can be serialized. Note that template shape must overlap with the data shape, otherwise serialization will crash on exception!
 
 ````javascript
 const data = {
@@ -130,4 +130,4 @@ const textHandler = {
   }
 }
 
-NetSerializer.setTextHandler(textHandler)
+NetSerializer.utils.setTextHandler(textHandler)
