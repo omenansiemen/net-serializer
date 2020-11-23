@@ -1,10 +1,11 @@
 const NetSerializer = require('../index')
 const testData = require('./testData')
+const testData2 = require('./testProblem')
 // const testData = {data: {val: true}, template: {val: {type: 'boolean'}}}
 // const lz = require("lz-string")
 const TextEncoder = require('text-encoding').TextEncoder
 const TextDecoder = require('text-encoding').TextDecoder
-// const util = require('util')
+const util = require('util')
 
 const stringHandler = {
 	encode: function (input) {
@@ -43,7 +44,7 @@ console.time('full test time')
 const aBuf = NetSerializer.pack(testData.data, testData.template, {
 	onErrorCallback: error => console.error(error)
 })
-console.log('Data size in bytes', aBuf.byteLength)
+// console.log('Data size in bytes', aBuf.byteLength)
 // console.log(aBuf)
 // console.log(new TextEncoder().encode(JSON.stringify(testData.data)).byteLength)
 
@@ -98,6 +99,14 @@ if (JSON.stringify(testData.expectedResult) !== JSON.stringify(obj3)) {
 }
 if (result3.length > 0) {
 	console.error('Data 3 result should be empty array because it is handled by unpack callback function')
+}
+
+const problemBuf = NetSerializer.pack(testData2.data, testData2.template)
+// console.log('problemBuf size', problemBuf.byteLength)
+const problemResult = NetSerializer.unpack(problemBuf, testData2.template)
+if (JSON.stringify(testData2.expectedResult) !== JSON.stringify(problemResult)) {
+	console.error('Data 3 is corrupted!')
+	process.exit(1)
 }
 
 console.timeEnd('full test time')

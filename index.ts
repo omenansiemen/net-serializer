@@ -136,7 +136,8 @@ export const calculateBufferSize = (data: any, template: any, size = 0) => {
 				// Primitive value array
 				size += getByteLength(template[0]) * data.length
 			} else {
-				size += calculateBufferSize(data[0], template[0]) * data.length
+				for (let element of data)
+					size += calculateBufferSize(element, template[0])
 			}
 		}
 	} else {
