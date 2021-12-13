@@ -18,7 +18,11 @@ exports.data = Array.from({ length: numberOfItems }).map(() => ({
       velocity: { x: 22.737924275167472, y: 28.14180572055013 },
       angle: 0.420235722176959
     },
-    visible: false
+    visible: false,
+    weapon: {
+      type: 0,
+      placement: 0,
+    },
   },
   {
     identifier: { playerId: 1, serial: 10215 },
@@ -28,7 +32,11 @@ exports.data = Array.from({ length: numberOfItems }).map(() => ({
       velocity: { x: 11.643172722998244, y: 3.4230873467425926 },
       angle: 1.168204866279076
     },
-    visible: true
+    visible: true,
+    weapon: {
+      type: 5,
+      placement: 2,
+    },
   }],
   timestamp: Infinity,
 }))
@@ -46,7 +54,11 @@ exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
       velocity: { x: 22.737, y: 28.141 },
       angle: 0.4202212741492046
     },
-    visible: false
+    visible: false,
+    weapon: {
+      type: 0,
+      placement: 0,
+    },
   },
   {
     identifier: { playerId: 1, serial: 10215 },
@@ -56,7 +68,11 @@ exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
       velocity: { x: 11.643, y: 3.423 },
       angle: 1.1681441944407733
     },
-    visible: true
+    visible: true,
+    weapon: {
+      type: 5,
+      placement: 2,
+    },
   }],
   timestamp: 6553500,
 }))

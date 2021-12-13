@@ -1,5 +1,23 @@
 const NST = require('../index').Types
 
+const numberOfGunPositions = 3
+const weaponCompoundType = {
+  type: NST.uint8,
+  compress: {
+    pack: (prop) => {
+      return numberOfGunPositions * prop.type + prop.placement
+    },
+    unpack: (val) => {
+      val /= numberOfGunPositions
+      const result = {
+        type: Math.floor(val),
+        placement: Math.round((val - Math.floor(val)) * numberOfGunPositions),
+      }
+      return result
+    }
+  },
+}
+
 exports.template = [{
   emptyArray: [{ value: { type: NST.int8 } }],
   numberArray: [{ type: NST.uint8 }],
@@ -21,7 +39,8 @@ exports.template = [{
       },
       angle: { type: NST.uint16, multiplier: 65535 / (2 * Math.PI) }
     },
-    visible: { type: NST.boolean }
+    visible: { type: NST.boolean },
+    weapon: weaponCompoundType,
   }, { lengthType: NST.uint8 }],
   timestamp: {
     type: NST.uint16,

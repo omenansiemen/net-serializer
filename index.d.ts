@@ -17,6 +17,10 @@ export interface IMetaValue {
     type: metaValueType;
     multiplier?: number;
     preventOverflow?: boolean;
+    compress?: {
+        pack: (prop: Object) => number;
+        unpack: (value: number) => Object;
+    };
 }
 interface ArrayOptions {
     lengthType?: Types.uint8 | Types.uint16 | Types.uint32;
