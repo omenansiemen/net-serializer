@@ -1,3 +1,24 @@
+declare const uint8Max = 255;
+declare const int8Min = -128;
+declare const int8Max = 127;
+declare const uint16Max = 65535;
+declare const int16Min = -32768;
+declare const int16Max = 32767;
+declare const uint32Max = 4294967295;
+declare const int32Min = -2147483648;
+declare const int32Max = 2147483647;
+interface ILimits {
+    uint8Max: typeof uint8Max;
+    int8Min: typeof int8Min;
+    int8Max: typeof int8Max;
+    uint16Max: typeof uint16Max;
+    int16Min: typeof int16Min;
+    int16Max: typeof int16Max;
+    uint32Max: typeof uint32Max;
+    int32Min: typeof int32Min;
+    int32Max: typeof int32Max;
+}
+export declare const Limits: ILimits;
 export declare enum Types {
     int8 = "int8",
     uint8 = "uint8",

@@ -17,6 +17,29 @@ const uint32Max = 4294967295
 const int32Min = -2147483648
 const int32Max = 2147483647
 
+interface ILimits {
+	uint8Max: typeof uint8Max
+	int8Min: typeof int8Min
+	int8Max: typeof int8Max
+	uint16Max: typeof uint16Max
+	int16Min: typeof int16Min
+	int16Max: typeof int16Max
+	uint32Max: typeof uint32Max
+	int32Min: typeof int32Min
+	int32Max: typeof int32Max
+}
+export const Limits: ILimits = {
+	uint8Max,
+	int8Min,
+	int8Max,
+	uint16Max,
+	int16Min,
+	int16Max,
+	uint32Max,
+	int32Min,
+	int32Max,
+}
+
 export enum Types {
 	int8 = 'int8',
 	uint8 = 'uint8',
