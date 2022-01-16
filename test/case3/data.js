@@ -1,13 +1,14 @@
-exports.template = require('./templates').template
-
 const text = 'Väinämöinen Väinämöinen \n'
 const numberOfItems = 255
-const numbers = Array(255).fill(-1)
-const numbersAsObject = numbers.map(n => ({ type: n }))
+const numbersAsObject = Array.from(
+  { length: numberOfItems },
+  (v, i) => ({ type: Math.round(0 - (numberOfItems / 2)) + i }),
+)
 
-exports.data = Array.from({ length: numberOfItems }).map(() => ({
+exports.original = Array.from({ length: numberOfItems }).map(() => ({
   emptyArray: [],
-  numberArray: [45,6,34,160],
+  numberArray: [45, 6, 34, 160],
+  numberArrayWithInfinity: [45, 6, 34, 160, Infinity],
   numbersAsObject,
   label: text,
   objects: [{
@@ -43,7 +44,8 @@ exports.data = Array.from({ length: numberOfItems }).map(() => ({
 
 exports.expectedResult = Array.from({ length: numberOfItems }).map(() => ({
   emptyArray: [],
-  numberArray: [45,6,34,160],
+  numberArray: [45, 6, 34, 160],
+  numberArrayWithInfinity: [45, 6, 34, 160, Infinity],
   numbersAsObject,
   label: text,
   objects: [{
