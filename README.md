@@ -3,6 +3,8 @@ Type aware object serializer for sending structured data efficiently over networ
 
 Uses template object to describe which properties will be serialized into binary data buffer. Property value can be either **number**, **boolean** or **string**.
 
+## Data types
+
 **Numbers** can be serialized by using 1 to 4 bytes with following template types 
 ````javascript
  'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32'
@@ -12,6 +14,8 @@ Uses template object to describe which properties will be serialized into binary
 ````javascript
  'boolean' | 'string'
 ````
+
+## Template
 
 Object being serialized must be described by template object. Structure of the template object reflects the structure of the object being serialized. Primitive values in the template object are represented with object that implements IMetaValue interface.
 
@@ -23,6 +27,7 @@ interface IMetaValue {
 }
 type MetaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'boolean' | 'string'
 ````
+
 Example of template object. 
 
 ```javascript
@@ -49,7 +54,9 @@ const template = {
 }
 ```
 
-With the above template the following data can be serialized. Note that template shape must overlap with the data shape, otherwise serialization will crash on exception!
+## Working example
+
+With the above template the following data can be serialized. Note that template shape must overlap with the data shape, otherwise serialization will fail! [test/case2]
 
 ````javascript
 const data = {
@@ -113,6 +120,10 @@ JSON.stringify(deserializedData) === JSON.stringify(expectedResult)
 
 In this case serialized form of the data (47 bytes) uses space roughly ten times less than JSON stringified (459 bytes).
 
+
+
+## Advanced features
+
 You can set custom text handler if TextEncoder and TextDecoder is not available in your platform (they are in browser and will be used automatically if custom text handler is not set).
 
 ````javascript
@@ -131,3 +142,10 @@ const textHandler = {
 }
 
 NetSerializer.utils.setTextHandler(textHandler)
+````
+
+Check *test* folder to see more advanced features:
+- array unpack callback [case3]
+- array length type (uint8, uint16, uint32) [case3]
+- compressing multiple properties to one with pack and unpack callbacks [case3]
+- debugging pack with onErrorCallback function [case3]
