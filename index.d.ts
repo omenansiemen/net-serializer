@@ -39,7 +39,7 @@ export interface IMetaValue {
     multiplier?: number;
     preventOverflow?: boolean;
     compress?: {
-        pack: (prop: Object) => number;
+        pack: (prop: Object, callStack?: Array<any>) => number;
         unpack: (value: number) => Object;
     };
 }
@@ -48,13 +48,15 @@ interface ArrayOptions {
     unpackCallback?: (item: any) => any;
 }
 export declare type ArrayTemplate<T = any> = [T, ArrayOptions?];
+interface IError {
+    onErrorCallback?: (error: string, callStack?: Array<object>) => void;
+}
 export declare const calculateBufferSize: (data: any, template: any, size?: number) => number;
-interface packExtraParams {
+interface packExtraParams extends IError {
     sharedBuffer?: ArrayBuffer;
     returnCopy?: boolean;
     freeBytes?: number;
     bufferSizeInBytes?: number;
-    onErrorCallback?: (error: string) => void;
 }
 export declare const pack: (object: any, template: any, extra?: packExtraParams) => ArrayBuffer;
 export declare const unpack: (buffer: ArrayBuffer, template: any) => any;

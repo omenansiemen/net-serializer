@@ -62,7 +62,7 @@ export interface IMetaValue {
 	multiplier?: number
 	preventOverflow?: boolean
 	compress?: {
-		pack: (prop: Object) => number
+		pack: (prop: Object, callStack?: Array<any>) => number
 		unpack: (value: number) => Object
 	}
 }
@@ -84,14 +84,19 @@ interface ArrayOptions {
 
 export type ArrayTemplate<T = any> = [T, ArrayOptions?]
 
-interface RefObject {
-	byteOffset: number
+interface IError {
+	onErrorCallback?: (error: string, callStack?: Array<object>) => void
+}
+interface RefObject extends IError {
 	buffer: ArrayBuffer
+	byteOffset: number
+	callStack: Array<object>
 	view: DataView
-	onErrorCallback?: (error: string) => void
 }
 
 function flatten(data: any, template: any, refObject: RefObject) {
+
+	refObject.callStack.push(data)
 
 	if (isArray(data) && isArrayTemplate(template)) {
 		// Storing information how many elements there are
@@ -118,14 +123,22 @@ function flatten(data: any, template: any, refObject: RefObject) {
 					refObject.byteOffset += addToBuffer(
 						refObject,
 						templateValue,
-						templateValue.compress.pack(value),
+						templateValue.compress.pack(value, refObject.callStack),
 					)
 				} else {
 					flatten(value, templateValue, refObject)
 				}
 			}
 			else if (isNumber(value) || isBoolean(value)) {
-				refObject.byteOffset += addToBuffer(refObject, templateValue, value)
+				if (isMetaValue(templateValue) && templateValue.compress) {
+					refObject.byteOffset += addToBuffer(
+						refObject,
+						templateValue,
+						templateValue.compress.pack(value, refObject.callStack),
+					)
+				} else {
+					refObject.byteOffset += addToBuffer(refObject, templateValue, value)
+				}
 			}
 			else if (typeof value === 'string') {
 				const rawValue = encodeText(value)
@@ -141,18 +154,19 @@ function flatten(data: any, template: any, refObject: RefObject) {
 			else {
 				let error = ''
 				if (isUndefined(value)) {
-					error = `Template property ${key}, is not found from data ${data}`
+					error = `Template property ${key}, is not found from data ${data}.`
 				}
 				console.error('This error must be fixed! Otherwise unflattening won\'t work. Details below.')
 				console.debug('data:', data, 'template:', template, 'key of template:', key)
 				console.debug('is template[key] metavalue', isMetaValue(templateValue))
 				if (typeof refObject.onErrorCallback === 'function') {
-					refObject.onErrorCallback(error)
+					refObject.onErrorCallback(error, refObject.callStack)
 				}
 				throw Error(error)
 			}
 		}
 	}
+	refObject.callStack.pop()
 }
 
 export const calculateBufferSize = (data: any, template: any, size = 0) => {
@@ -440,12 +454,11 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: InternalMetaValue, r
 	return value
 }
 
-interface packExtraParams {
+interface packExtraParams extends IError {
 	sharedBuffer?: ArrayBuffer
 	returnCopy?: boolean
 	freeBytes?: number
 	bufferSizeInBytes?: number
-	onErrorCallback?: (error: string) => void
 }
 
 export const pack = (object: any, template: any, extra: packExtraParams = {}) => {
@@ -466,9 +479,10 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 		buffer = new ArrayBuffer(sizeInBytes + freeBytes)
 	}
 
-	const ref = {
-		byteOffset: 0,
+	const ref: RefObject = {
 		buffer,
+		byteOffset: 0,
+		callStack: [],
 		view: new DataView(buffer),
 		onErrorCallback: extra.onErrorCallback,
 	}

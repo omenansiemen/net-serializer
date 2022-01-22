@@ -14,14 +14,14 @@ testProblem({ sharedBuffer, bufferSizeInBytes, returnCopy: true })
 function testProblem(params) {
 	const aBuf = NetSerializer.pack(data.original, template.data, params)
 	const problemResult = NetSerializer.unpack(aBuf, template.data)
-	utils.compareObjects(data.expectedResult, problemResult, 'Test problem is corrupted!')
+	utils.compareObjects(data.expectedResult, problemResult, 'Data 1 is corrupted!')
 	if (params.returnCopy) {
 		if (aBuf === params.sharedBuffer) {
-			console.error('Test problem is corrupted. Pack returned shared buffer!')
+			console.error('Data 1 is corrupted. Pack returned shared buffer!')
 			process.exit(1)
 		}
 	} else if (aBuf !== params.sharedBuffer) {
-		console.error('Test problem is corrupted. Pack did not returned shared buffer!')
+		console.error('Data 1 is corrupted. Pack did not returned shared buffer!')
 		process.exit(1)
 	}
 }
