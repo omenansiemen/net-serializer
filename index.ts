@@ -79,7 +79,7 @@ interface InternalMetaValue extends IMetaValue {
 
 interface ArrayOptions {
 	lengthType?: Types.uint8 | Types.uint16 | Types.uint32
-	unpackCallback?: (item: any) => any
+	unpackCallback?: (item: any, result?: any) => any
 }
 
 export type ArrayTemplate<T = any> = [T, ArrayOptions?]
@@ -354,7 +354,7 @@ function unflatten(buffer: ArrayBuffer, template: any, options: TOption) {
 		for (let i = 0; i < (isNumber(value) ? value : 0); i++) {
 			let item = unflatten(buffer, template[0], options)
 			if (itemCallback) {
-				item = itemCallback(item)
+				item = itemCallback(item, result)
 				if (typeof item !== 'undefined' && item !== null) {
 					result.push(item)
 				}

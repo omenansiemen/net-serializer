@@ -45,7 +45,7 @@ export interface IMetaValue {
 }
 interface ArrayOptions {
     lengthType?: Types.uint8 | Types.uint16 | Types.uint32;
-    unpackCallback?: (item: any) => any;
+    unpackCallback?: (item: any, result?: any) => any;
 }
 export declare type ArrayTemplate<T = any> = [T, ArrayOptions?];
 interface IError {
