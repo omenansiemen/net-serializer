@@ -4,6 +4,7 @@ const template = require('./template')
 const utils = require('../utils')
 
 const bufferSizeInBytes = 1875
+utils.testBufferSize(data, template, bufferSizeInBytes)
 const sharedBuffer = new ArrayBuffer(bufferSizeInBytes)
 // Calculates buffer size regardles of givin buffer as param
 testProblem({ sharedBuffer })

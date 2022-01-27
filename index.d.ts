@@ -45,6 +45,10 @@ export interface IMetaValue {
 }
 interface ArrayOptions {
     lengthType?: Types.uint8 | Types.uint16 | Types.uint32;
+    /**
+     * Set this to true if array template does not contain any array
+     */
+    pure?: boolean;
     unpackCallback?: (item: any) => any;
 }
 export declare type ArrayTemplate<T = any> = [T, ArrayOptions?];

@@ -1,3 +1,4 @@
+const { calculateBufferSize } = require('..')
 const TextEncoder = require('text-encoding').TextEncoder
 const TextDecoder = require('text-encoding').TextDecoder
 
@@ -31,5 +32,12 @@ exports.textHandlers = {
 exports.compareObjects = (a, b, errorMessage) => {
     if (JSON.stringify(a) !== JSON.stringify(b)) {
         throw Error(errorMessage)
+    }
+}
+
+exports.testBufferSize = (data, template, expected) => {
+    const bufferSize = calculateBufferSize(data.original, template.data)
+    if (bufferSize !== expected) {
+        throw Error(`Incorrect buffer size, expected ${expected} but got ${bufferSize}`)
     }
 }

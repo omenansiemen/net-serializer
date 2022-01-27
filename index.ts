@@ -73,12 +73,12 @@ const isMetaValue = (object: any): object is IMetaValue => {
 	return false
 }
 
-interface InternalMetaValue extends IMetaValue {
-	_value?: number | boolean | Uint8Array
-}
-
 interface ArrayOptions {
 	lengthType?: Types.uint8 | Types.uint16 | Types.uint32
+	/**
+	 * Set this to true if array template does not contain any array
+	 */
+	pure?: boolean
 	unpackCallback?: (item: any) => any
 }
 
@@ -94,24 +94,24 @@ interface RefObject extends IError {
 	view: DataView
 }
 
-function flatten(data: any, template: any, refObject: RefObject) {
+function flatten(data: any, template: any, ref: RefObject) {
 
-	refObject.callStack.push(data)
+	ref.callStack.push(data)
 
-	if (isArray(data) && isArrayTemplate(template)) {
+	if (isArrayTemplate(template)) {
 		// Storing information how many elements there are
-		const arraySize: InternalMetaValue = {
+		const arraySize: IMetaValue = {
 			type: template[1]?.lengthType ?? Types.uint32
 		}
-		refObject.byteOffset += addToBuffer(refObject, arraySize, data.length)
+		ref.byteOffset += addToBuffer(ref, arraySize, data.length)
 		if (isMetaValue(template[0])) {
 			// Primitive value array
 			for (let element of data) {
-				refObject.byteOffset += addToBuffer(refObject, template[0], element)
+				ref.byteOffset += addToBuffer(ref, template[0], element)
 			}
 		} else {
 			for (let element of data) {
-				flatten(element, template[0], refObject)
+				flatten(element, template[0], ref)
 			}
 		}
 	} else {
@@ -120,24 +120,24 @@ function flatten(data: any, template: any, refObject: RefObject) {
 			const templateValue = template[key]
 			if (isObject(value)) {
 				if (isMetaValue(templateValue) && templateValue.compress) {
-					refObject.byteOffset += addToBuffer(
-						refObject,
+					ref.byteOffset += addToBuffer(
+						ref,
 						templateValue,
-						templateValue.compress.pack(value, refObject.callStack),
+						templateValue.compress.pack(value, ref.callStack),
 					)
 				} else {
-					flatten(value, templateValue, refObject)
+					flatten(value, templateValue, ref)
 				}
 			}
 			else if (isNumber(value) || isBoolean(value)) {
 				if (isMetaValue(templateValue) && templateValue.compress) {
-					refObject.byteOffset += addToBuffer(
-						refObject,
+					ref.byteOffset += addToBuffer(
+						ref,
 						templateValue,
-						templateValue.compress.pack(value, refObject.callStack),
+						templateValue.compress.pack(value, ref.callStack),
 					)
 				} else {
-					refObject.byteOffset += addToBuffer(refObject, templateValue, value)
+					ref.byteOffset += addToBuffer(ref, templateValue, value)
 				}
 			}
 			else if (typeof value === 'string') {
@@ -145,11 +145,10 @@ function flatten(data: any, template: any, refObject: RefObject) {
 				// Storing length of bytes of string
 				// assertStringLength(templateValue.type, rawValue, key)
 				const type = getTypeForStringLength(templateValue.type)
-				const stringLength: InternalMetaValue = { type }
-				refObject.byteOffset += addToBuffer(refObject, stringLength, rawValue.byteLength)
+				const stringLength: IMetaValue = { type }
+				ref.byteOffset += addToBuffer(ref, stringLength, rawValue.byteLength)
 				// Storing value as Uint8Array of bytes
-				addToBuffer(refObject, templateValue, rawValue)
-				refObject.byteOffset += rawValue.byteLength
+				ref.byteOffset += addToBuffer(ref, templateValue, rawValue)
 			}
 			else {
 				let error = ''
@@ -159,31 +158,40 @@ function flatten(data: any, template: any, refObject: RefObject) {
 				console.error('This error must be fixed! Otherwise unflattening won\'t work. Details below.')
 				console.debug('data:', data, 'template:', template, 'key of template:', key)
 				console.debug('is template[key] metavalue', isMetaValue(templateValue))
-				if (typeof refObject.onErrorCallback === 'function') {
-					refObject.onErrorCallback(error, refObject.callStack)
+				if (typeof ref.onErrorCallback === 'function') {
+					ref.onErrorCallback(error, ref.callStack)
 				}
 				throw Error(error)
 			}
 		}
 	}
-	refObject.callStack.pop()
+	ref.callStack.pop()
 }
 
-export const calculateBufferSize = (data: any, template: any, size = 0) => {
+export const calculateBufferSize = (data: any, template: any, size = 0): number => {
 
-	if (isArray(data) && isArrayTemplate(template)) {
+	if (isArrayTemplate(template)) {
 		// Storing information how many elements there are
-		const arraySize: InternalMetaValue = {
+		const arraySize: IMetaValue = {
 			type: template[1]?.lengthType ?? Types.uint32
 		}
 		size += getByteLength(arraySize, data.length)
 		if (data.length > 0) {
 			if (isMetaValue(template[0])) {
 				// Primitive value array
-				size += getByteLength(template[0]) * data.length
+				const byteLengthOfElement = getByteLength(template[0])
+				size += byteLengthOfElement * data.length
 			} else {
-				for (let element of data)
-					size += calculateBufferSize(element, template[0])
+				if (template[1]?.pure) {
+					const sizeBeforeSizeCalculation = size
+					size = calculateBufferSize(data[0], template[0], size)
+					const templateSize = size - sizeBeforeSizeCalculation
+					size += (data.length - 1) * templateSize
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						size = calculateBufferSize(data[i], template[0], size)
+					}
+				}
 			}
 		}
 	} else {
@@ -192,19 +200,19 @@ export const calculateBufferSize = (data: any, template: any, size = 0) => {
 			const templateValue = template[key]
 			if (isObject(value)) {
 				if (isMetaValue(templateValue) && templateValue.compress) {
-					size += getByteLength(templateValue, value)
+					size += getByteLength(templateValue)
 				} else {
-					size += calculateBufferSize(value, templateValue)
+					size = calculateBufferSize(value, templateValue, size)
 				}
 			}
 			else if (isNumber(value) || isBoolean(value)) {
-				size += getByteLength(templateValue, value)
+				size += getByteLength(templateValue)
 			}
 			else if (typeof value === 'string') {
 				const rawValue = encodeText(value)
 				// Storing length of bytes of string
 				const type = getTypeForStringLength(templateValue.type)
-				const stringLength: InternalMetaValue = { type }
+				const stringLength: IMetaValue = { type }
 				size += getByteLength(stringLength, rawValue.byteLength)
 				// Storing value as Uint8Array of bytes
 				size += rawValue.byteLength
@@ -224,7 +232,8 @@ const getTypeForStringLength = (type: metaValueType): Types.uint8 | Types.uint16
 	return Types.uint32
 }
 
-function addToBuffer(refObject: RefObject, metaValue: Readonly<InternalMetaValue>, value: any) {
+type ViewAndByteOffset = Pick<RefObject, 'view' | 'byteOffset'>
+function addToBuffer(ref: ViewAndByteOffset, metaValue: Readonly<IMetaValue>, value: any): number {
 
 	let byteLength = 0
 
@@ -236,60 +245,62 @@ function addToBuffer(refObject: RefObject, metaValue: Readonly<InternalMetaValue
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint8Max ? uint8Max : value))
 		}
-		refObject.view.setUint8(refObject.byteOffset, value)
+		ref.view.setUint8(ref.byteOffset, value)
 		byteLength = 1
 	}
 	else if (metaValue.type === Types.int8) {
 		if (metaValue.preventOverflow) {
 			value = (value < int8Min ? int8Min : (value > int8Max ? int8Max : value))
 		}
-		refObject.view.setInt8(refObject.byteOffset, value)
+		ref.view.setInt8(ref.byteOffset, value)
 		byteLength = 1
 	}
 	else if (metaValue.type === Types.boolean) {
-		refObject.view.setInt8(refObject.byteOffset, value === false ? 0 : 1)
+		ref.view.setInt8(ref.byteOffset, value === false ? 0 : 1)
 		byteLength = 1
 	}
 	else if (metaValue.type === Types.uint16) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint16Max ? uint16Max : value))
 		}
-		refObject.view.setUint16(refObject.byteOffset, value)
+		ref.view.setUint16(ref.byteOffset, value)
 		byteLength = 2
 	}
 	else if (metaValue.type === Types.int16) {
 		if (metaValue.preventOverflow) {
 			value = (value < int16Min ? int16Min : (value > int16Max ? int16Max : value))
 		}
-		refObject.view.setInt16(refObject.byteOffset, value)
+		ref.view.setInt16(ref.byteOffset, value)
 		byteLength = 2
 	}
 	else if (metaValue.type === Types.uint32) {
 		if (metaValue.preventOverflow) {
 			value = (value < 0 ? 0 : (value > uint32Max ? uint32Max : value))
 		}
-		refObject.view.setUint32(refObject.byteOffset, value)
+		ref.view.setUint32(ref.byteOffset, value)
 		byteLength = 4
 	}
 	else if (metaValue.type === Types.int32) {
 		if (metaValue.preventOverflow) {
 			value = (value < int32Min ? int32Min : (value > int32Max ? int32Max : value))
 		}
-		refObject.view.setInt32(refObject.byteOffset, value)
+		ref.view.setInt32(ref.byteOffset, value)
 		byteLength = 4
 	}
 	else if (metaValue.type === Types.float32) {
-		refObject.view.setFloat32(refObject.byteOffset, value)
+		ref.view.setFloat32(ref.byteOffset, value)
 		byteLength = 4
 	}
 	else if (metaValue.type === Types.float64) {
-		refObject.view.setFloat64(refObject.byteOffset, value)
+		ref.view.setFloat64(ref.byteOffset, value)
 		byteLength = 8
 	}
 	else {
 		if (metaValue.type === Types.string8 || metaValue.type === Types.string16 || metaValue.type === Types.string) {
 			if (value instanceof Uint8Array) {
-				value.forEach((value, slot) => refObject.view.setUint8(slot + refObject.byteOffset, value))
+				value.forEach((value, slot) => {
+					ref.view.setUint8(slot + ref.byteOffset, value)
+				})
 			} else {
 				console.error('Unknown metaValue.type', metaValue.type, value)
 			}
@@ -297,13 +308,13 @@ function addToBuffer(refObject: RefObject, metaValue: Readonly<InternalMetaValue
 		else {
 			console.error('Unknown metaValue.type', metaValue.type, value)
 		}
-		byteLength = value
+		byteLength = value.byteLength
 	}
 
 	return byteLength
 }
 
-function getByteLength(metaValue: Readonly<InternalMetaValue>, value?: any) {
+function getByteLength(metaValue: Readonly<IMetaValue>, value?: any): number {
 
 	let byteLength = 0
 
@@ -338,12 +349,12 @@ function getByteLength(metaValue: Readonly<InternalMetaValue>, value?: any) {
 	return byteLength
 }
 
-type TOption = {
+type UnflattenOptions = {
 	byteOffset: number
 	view: DataView
 }
 
-function unflatten(buffer: ArrayBuffer, template: any, options: TOption) {
+function unflatten(buffer: ArrayBuffer, template: any, options: UnflattenOptions) {
 
 	let result: any
 
@@ -386,7 +397,7 @@ function unflatten(buffer: ArrayBuffer, template: any, options: TOption) {
 	return result
 }
 
-function getValueFromBuffer(buffer: ArrayBuffer, metaValue: InternalMetaValue, ref: TOption) {
+function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, ref: UnflattenOptions) {
 
 	let value
 	let byteLength = 0

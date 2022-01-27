@@ -9,7 +9,7 @@ exports.data = {
         shape: [{
           x: { type: NS.Types.int16, multiplier: 10 },
           y: { type: NS.Types.int16, multiplier: 10 },
-        }],
+        }, { pure: true }],
       }
     },
   ]
