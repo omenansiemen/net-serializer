@@ -1,12 +1,14 @@
 const NetSerializer = require('../..')
 const data = require('./data')
-const template = require('./template')
-const { compareObjects } = require('../utils')
+const { template } = require('./template')
+const utils = require('../utils')
+
+utils.testBufferSize(data.original, template, 21)
 
 const arrayBuffer = NetSerializer.pack(
 	data.original,
-	template.data,
+	template,
 	{ onErrorCallback: (erro, stack) => console.log('stack', stack) },
 )
-const deserializedData = NetSerializer.unpack(arrayBuffer, template.data)
-compareObjects(data.expectedResult, deserializedData, 'Data 4 is corrupted!')
+const deserializedData = NetSerializer.unpack(arrayBuffer, template)
+utils.compareObjects(data.expectedResult, deserializedData, 'Data 4 is corrupted!')

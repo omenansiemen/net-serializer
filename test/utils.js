@@ -36,7 +36,7 @@ exports.compareObjects = (a, b, errorMessage) => {
 }
 
 exports.testBufferSize = (data, template, expected) => {
-    const bufferSize = calculateBufferSize(data.original, template.data)
+    const bufferSize = calculateBufferSize(data, template)
     if (bufferSize !== expected) {
         throw Error(`Incorrect buffer size, expected ${expected} but got ${bufferSize}`)
     }

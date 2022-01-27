@@ -1,10 +1,10 @@
 const NetSerializer = require('../..')
 const data = require('./data')
-const template = require('./template')
+const { template } = require('./template')
 const utils = require('../utils')
 
 const bufferSizeInBytes = 1875
-utils.testBufferSize(data, template, bufferSizeInBytes)
+utils.testBufferSize(data.original, template, bufferSizeInBytes)
 const sharedBuffer = new ArrayBuffer(bufferSizeInBytes)
 // Calculates buffer size regardles of givin buffer as param
 testProblem({ sharedBuffer })
@@ -13,8 +13,8 @@ testProblem({ sharedBuffer, bufferSizeInBytes })
 testProblem({ sharedBuffer, bufferSizeInBytes, returnCopy: true })
 
 function testProblem(params) {
-	const aBuf = NetSerializer.pack(data.original, template.data, params)
-	const problemResult = NetSerializer.unpack(aBuf, template.data)
+	const aBuf = NetSerializer.pack(data.original, template, params)
+	const problemResult = NetSerializer.unpack(aBuf, template)
 	utils.compareObjects(data.expectedResult, problemResult, 'Data 1 is corrupted!')
 	if (params.returnCopy) {
 		if (aBuf === params.sharedBuffer) {

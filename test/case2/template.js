@@ -1,6 +1,6 @@
 const NS = require('../..')
 
-exports.data = {
+exports.template = {
   label: { type: NS.Types.string },
   objects: [{
     identifier: {

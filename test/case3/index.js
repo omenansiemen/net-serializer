@@ -3,11 +3,13 @@ const data = require('./data')
 const { template } = require('./template')
 const utils = require('../utils')
 
+utils.testBufferSize(data.original, template, 85681)
+
 const aBuf = NetSerializer.pack(data.original, template, {
     onErrorCallback: error => console.error(error)
 })
 const result1 = NetSerializer.unpack(aBuf, template)
-utils.compareObjects(data.expectedResult, result1, 'Data 1 is corrupted!')
+utils.compareObjects(data.expectedResult, result1, 'Data 3 is corrupted!')
 
 /* testing array callback functionality */
 const callbackResult = []

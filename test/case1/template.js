@@ -1,6 +1,6 @@
 const NS = require('../..')
 
-exports.data = {
+exports.template = {
   type: { type: NS.Types.uint8 },
   objects: [
     {

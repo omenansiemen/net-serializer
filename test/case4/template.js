@@ -13,7 +13,7 @@ const coordinate = (prop) => ({
   multiplier: 100
 })
 
-exports.data = {
+exports.template = {
   playerId: { type: NS.Types.uint8 },
   hits: [{
     state: {
