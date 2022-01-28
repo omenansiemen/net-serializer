@@ -62,7 +62,12 @@ export interface IMetaValue {
 	multiplier?: number
 	preventOverflow?: boolean
 	compress?: {
-		pack: (prop: Object, callStack?: Array<any>) => number
+		/**
+		 * @param value			Value of object's property being serialized
+		 * @param objectStack	Original data being serialized is always first element
+		 *  					and then followed by elements of array being serialized
+		 */
+		pack: (prop: Object, objectStack?: any) => number
 		unpack: (value: number) => Object
 	}
 }
@@ -90,13 +95,11 @@ interface IError {
 interface RefObject extends IError {
 	buffer: ArrayBuffer
 	byteOffset: number
-	callStack: Array<object>
+	objectStack: Array<any>
 	view: DataView
 }
 
 function flatten(data: any, template: any, ref: RefObject) {
-
-	ref.callStack.push(data)
 
 	if (isArrayTemplate(template)) {
 		// Storing information how many elements there are
@@ -111,7 +114,9 @@ function flatten(data: any, template: any, ref: RefObject) {
 			}
 		} else {
 			for (let element of data) {
+				ref.objectStack.push(element)
 				flatten(element, template[0], ref)
+				ref.objectStack.pop()
 			}
 		}
 	} else {
@@ -123,7 +128,7 @@ function flatten(data: any, template: any, ref: RefObject) {
 					ref.byteOffset += addToBuffer(
 						ref,
 						templateValue,
-						templateValue.compress.pack(value, ref.callStack),
+						templateValue.compress.pack(value, ref.objectStack),
 					)
 				} else {
 					flatten(value, templateValue, ref)
@@ -134,7 +139,7 @@ function flatten(data: any, template: any, ref: RefObject) {
 					ref.byteOffset += addToBuffer(
 						ref,
 						templateValue,
-						templateValue.compress.pack(value, ref.callStack),
+						templateValue.compress.pack(value, ref.objectStack),
 					)
 				} else {
 					ref.byteOffset += addToBuffer(ref, templateValue, value)
@@ -159,13 +164,12 @@ function flatten(data: any, template: any, ref: RefObject) {
 				console.debug('data:', data, 'template:', template, 'key of template:', key)
 				console.debug('is template[key] metavalue', isMetaValue(templateValue))
 				if (typeof ref.onErrorCallback === 'function') {
-					ref.onErrorCallback(error, ref.callStack)
+					ref.onErrorCallback(error)
 				}
 				throw Error(error)
 			}
 		}
 	}
-	ref.callStack.pop()
 }
 
 export const calculateBufferSize = (data: any, template: any, size = 0): number => {
@@ -491,9 +495,9 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 	}
 
 	const ref: RefObject = {
+		objectStack: [object],
 		buffer,
 		byteOffset: 0,
-		callStack: [],
 		view: new DataView(buffer),
 		onErrorCallback: extra.onErrorCallback,
 	}

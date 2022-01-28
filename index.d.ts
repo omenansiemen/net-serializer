@@ -39,7 +39,12 @@ export interface IMetaValue {
     multiplier?: number;
     preventOverflow?: boolean;
     compress?: {
-        pack: (prop: Object, callStack?: Array<any>) => number;
+        /**
+         * @param value			Value of object's property being serialized
+         * @param objectStack	Original data being serialized is always first element
+         *  					and then followed by elements of array being serialized
+         */
+        pack: (prop: Object, objectStack?: any) => number;
         unpack: (value: number) => Object;
     };
 }

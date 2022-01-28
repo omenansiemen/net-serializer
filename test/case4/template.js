@@ -3,8 +3,9 @@ const NS = require('../..')
 const coordinate = (prop) => ({
   type: NS.Types.int16,
   compress: {
-    pack: (val, stack) => {
-      return stack[stack.length - 3].target.position[prop] - val
+    pack: (val, stack = []) => {
+      const element = stack[stack.length - 1]
+      return element.state.target.position[prop] - val
     },
     unpack: (val) => {
       return val
