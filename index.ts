@@ -172,7 +172,7 @@ function flatten(data: any, template: any, ref: RefObject) {
 	}
 }
 
-export const calculateBufferSize = (data: any, template: any, size = 0): number => {
+export const calculateBufferSize = <A, B = any>(data: A, template: B, size = 0): number => {
 
 	if (isArrayTemplate(template) && Array.isArray(data)) {
 		// Storing information how many elements there are
@@ -480,7 +480,7 @@ interface PackOptions extends IError, CommonOptions {
 	bufferSizeInBytes?: number
 }
 
-export const pack = (object: any, template: any, options: PackOptions = {}) => {
+export const pack = <A, B>(object: A, template: B, options: PackOptions = {}) => {
 
 	const {
 		sharedBuffer,
@@ -513,7 +513,7 @@ export const pack = (object: any, template: any, options: PackOptions = {}) => {
 	return buffer
 }
 
-export const unpack = (buffer: ArrayBuffer, template: any, options: CommonOptions = {}): any => {
+export const unpack = <R>(buffer: ArrayBuffer, template: any, options: CommonOptions = {}): R => {
 	const { byteOffset = 0 } = options
 	return unflatten(buffer, template, { byteOffset, view: new DataView(buffer) })
 }

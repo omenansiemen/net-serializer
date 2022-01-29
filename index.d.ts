@@ -60,7 +60,7 @@ export declare type ArrayTemplate<T = any> = [T, ArrayOptions?];
 interface IError {
     onErrorCallback?: (error: string, callStack?: Array<object>) => void;
 }
-export declare const calculateBufferSize: (data: any, template: any, size?: number) => number;
+export declare const calculateBufferSize: <A, B = any>(data: A, template: B, size?: number) => number;
 interface CommonOptions {
     byteOffset?: number;
 }
@@ -69,19 +69,19 @@ interface PackOptions extends IError, CommonOptions {
     returnCopy?: boolean;
     bufferSizeInBytes?: number;
 }
-export declare const pack: (object: any, template: any, options?: PackOptions) => ArrayBuffer;
-export declare const unpack: (buffer: ArrayBuffer, template: any, options?: CommonOptions) => any;
+export declare const pack: <A, B>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
+export declare const unpack: <R>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
 interface ITextHandler {
     encode: (input: string) => Uint8Array;
     decode: (input: ArrayBuffer) => string;
 }
 export declare const setTextHandler: (handler: ITextHandler) => void;
 declare const NetSerializer: {
-    pack: (object: any, template: any, options?: PackOptions) => ArrayBuffer;
-    unpack: (buffer: ArrayBuffer, template: any, options?: CommonOptions) => any;
+    pack: <A, B>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
+    unpack: <R>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
     utils: {
         setTextHandler: (handler: ITextHandler) => void;
-        calculateBufferSize: (data: any, template: any, size?: number) => number;
+        calculateBufferSize: <A_1, B_1 = any>(data: A_1, template: B_1, size?: number) => number;
         Types: typeof Types;
     };
 };
