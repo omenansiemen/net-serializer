@@ -513,7 +513,7 @@ export const pack = <A, B = any>(object: A, template: B, options: PackOptions = 
 	return buffer
 }
 
-export const unpack = <R>(buffer: ArrayBuffer, template: any, options: CommonOptions = {}): R => {
+export const unpack = <R = any>(buffer: ArrayBuffer, template: any, options: CommonOptions = {}): R => {
 	const { byteOffset = 0 } = options
 	return unflatten(buffer, template, { byteOffset, view: new DataView(buffer) })
 }

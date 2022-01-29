@@ -70,7 +70,7 @@ interface PackOptions extends IError, CommonOptions {
     bufferSizeInBytes?: number;
 }
 export declare const pack: <A, B = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
-export declare const unpack: <R>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
+export declare const unpack: <R = any>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
 interface ITextHandler {
     encode: (input: string) => Uint8Array;
     decode: (input: ArrayBuffer) => string;
@@ -78,7 +78,7 @@ interface ITextHandler {
 export declare const setTextHandler: (handler: ITextHandler) => void;
 declare const NetSerializer: {
     pack: <A, B = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
-    unpack: <R>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
+    unpack: <R = any>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
     utils: {
         setTextHandler: (handler: ITextHandler) => void;
         calculateBufferSize: <A_1, B_1 = any>(data: A_1, template: B_1, size?: number) => number;
