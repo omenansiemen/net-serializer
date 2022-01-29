@@ -480,7 +480,7 @@ interface PackOptions extends IError, CommonOptions {
 	bufferSizeInBytes?: number
 }
 
-export const pack = <A, B>(object: A, template: B, options: PackOptions = {}) => {
+export const pack = <A, B = any>(object: A, template: B, options: PackOptions = {}) => {
 
 	const {
 		sharedBuffer,
