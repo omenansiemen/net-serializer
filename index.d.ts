@@ -61,22 +61,24 @@ interface IError {
     onErrorCallback?: (error: string, callStack?: Array<object>) => void;
 }
 export declare const calculateBufferSize: (data: any, template: any, size?: number) => number;
-interface packExtraParams extends IError {
+interface CommonOptions {
+    freeBytes?: number;
+}
+interface PackOptions extends IError, CommonOptions {
     sharedBuffer?: ArrayBuffer;
     returnCopy?: boolean;
-    freeBytes?: number;
     bufferSizeInBytes?: number;
 }
-export declare const pack: (object: any, template: any, extra?: packExtraParams) => ArrayBuffer;
-export declare const unpack: (buffer: ArrayBuffer, template: any) => any;
+export declare const pack: (object: any, template: any, options?: PackOptions) => ArrayBuffer;
+export declare const unpack: (buffer: ArrayBuffer, template: any, options?: CommonOptions) => any;
 interface ITextHandler {
     encode: (input: string) => Uint8Array;
     decode: (input: ArrayBuffer) => string;
 }
 export declare const setTextHandler: (handler: ITextHandler) => void;
 declare const NetSerializer: {
-    pack: (object: any, template: any, extra?: packExtraParams) => ArrayBuffer;
-    unpack: (buffer: ArrayBuffer, template: any) => any;
+    pack: (object: any, template: any, options?: PackOptions) => ArrayBuffer;
+    unpack: (buffer: ArrayBuffer, template: any, options?: CommonOptions) => any;
     utils: {
         setTextHandler: (handler: ITextHandler) => void;
         calculateBufferSize: (data: any, template: any, size?: number) => number;

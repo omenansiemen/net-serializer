@@ -469,37 +469,39 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, ref: Unf
 	return value
 }
 
-interface packExtraParams extends IError {
+interface CommonOptions {
+	freeBytes?: number
+}
+interface PackOptions extends IError, CommonOptions {
 	sharedBuffer?: ArrayBuffer
 	returnCopy?: boolean
-	freeBytes?: number
 	bufferSizeInBytes?: number
 }
 
-export const pack = (object: any, template: any, extra: packExtraParams = {}) => {
+export const pack = (object: any, template: any, options: PackOptions = {}) => {
 
 	const {
 		sharedBuffer,
 		returnCopy = false,
 		freeBytes = 0,
 		bufferSizeInBytes,
-	} = extra
+	} = options
 
-	const sizeInBytes = bufferSizeInBytes ?? calculateBufferSize(object, template)
+	const sizeInBytes = (bufferSizeInBytes ?? calculateBufferSize(object, template)) + freeBytes
 
 	let buffer: ArrayBuffer
 	if (typeof sharedBuffer !== 'undefined') {
 		buffer = sharedBuffer
 	} else {
-		buffer = new ArrayBuffer(sizeInBytes + freeBytes)
+		buffer = new ArrayBuffer(sizeInBytes)
 	}
 
 	const ref: RefObject = {
 		objectStack: [object],
 		buffer,
-		byteOffset: 0,
+		byteOffset: freeBytes,
 		view: new DataView(buffer),
-		onErrorCallback: extra.onErrorCallback,
+		onErrorCallback: options.onErrorCallback,
 	}
 	flatten(object, template, ref)
 
@@ -509,8 +511,9 @@ export const pack = (object: any, template: any, extra: packExtraParams = {}) =>
 	return buffer
 }
 
-export const unpack = (buffer: ArrayBuffer, template: any): any => {
-	return unflatten(buffer, template, { byteOffset: 0, view: new DataView(buffer) })
+export const unpack = (buffer: ArrayBuffer, template: any, options: CommonOptions = {}): any => {
+	const { freeBytes = 0 } = options
+	return unflatten(buffer, template, { byteOffset: freeBytes, view: new DataView(buffer) })
 }
 
 type TDecodeText = (input: ArrayBuffer) => string
