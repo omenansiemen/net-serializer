@@ -174,7 +174,7 @@ function flatten(data: any, template: any, ref: RefObject) {
 
 export const calculateBufferSize = (data: any, template: any, size = 0): number => {
 
-	if (isArrayTemplate(template)) {
+	if (isArrayTemplate(template) && Array.isArray(data)) {
 		// Storing information how many elements there are
 		const arraySize: IMetaValue = {
 			type: template[1]?.lengthType ?? Types.uint32
@@ -200,7 +200,9 @@ export const calculateBufferSize = (data: any, template: any, size = 0): number 
 		}
 	} else {
 		Object.keys(template).forEach(key => {
+			//@ts-ignore
 			const value = data[key]
+			//@ts-ignore
 			const templateValue = template[key]
 			if (isObject(value)) {
 				if (isMetaValue(templateValue) && templateValue.compress) {
@@ -470,7 +472,7 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, ref: Unf
 }
 
 interface CommonOptions {
-	freeBytes?: number
+	byteOffset?: number
 }
 interface PackOptions extends IError, CommonOptions {
 	sharedBuffer?: ArrayBuffer
@@ -483,11 +485,11 @@ export const pack = (object: any, template: any, options: PackOptions = {}) => {
 	const {
 		sharedBuffer,
 		returnCopy = false,
-		freeBytes = 0,
 		bufferSizeInBytes,
+		byteOffset = 0
 	} = options
 
-	const sizeInBytes = (bufferSizeInBytes ?? calculateBufferSize(object, template)) + freeBytes
+	const sizeInBytes = (bufferSizeInBytes ?? calculateBufferSize(object, template))
 
 	let buffer: ArrayBuffer
 	if (typeof sharedBuffer !== 'undefined') {
@@ -499,7 +501,7 @@ export const pack = (object: any, template: any, options: PackOptions = {}) => {
 	const ref: RefObject = {
 		objectStack: [object],
 		buffer,
-		byteOffset: freeBytes,
+		byteOffset,
 		view: new DataView(buffer),
 		onErrorCallback: options.onErrorCallback,
 	}
@@ -512,8 +514,8 @@ export const pack = (object: any, template: any, options: PackOptions = {}) => {
 }
 
 export const unpack = (buffer: ArrayBuffer, template: any, options: CommonOptions = {}): any => {
-	const { freeBytes = 0 } = options
-	return unflatten(buffer, template, { byteOffset: freeBytes, view: new DataView(buffer) })
+	const { byteOffset = 0 } = options
+	return unflatten(buffer, template, { byteOffset, view: new DataView(buffer) })
 }
 
 type TDecodeText = (input: ArrayBuffer) => string

@@ -62,7 +62,7 @@ interface IError {
 }
 export declare const calculateBufferSize: (data: any, template: any, size?: number) => number;
 interface CommonOptions {
-    freeBytes?: number;
+    byteOffset?: number;
 }
 interface PackOptions extends IError, CommonOptions {
     sharedBuffer?: ArrayBuffer;
