@@ -65,8 +65,9 @@ interface CommonOptions {
     byteOffset?: number;
 }
 interface PackOptions extends IError, CommonOptions {
-    sharedBuffer?: ArrayBuffer;
     bufferSizeInBytes?: number;
+    cacheBuffer?: boolean;
+    sharedBuffer?: ArrayBuffer;
 }
 export declare const pack: <A, B = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
 export declare const unpack: <R = any>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;

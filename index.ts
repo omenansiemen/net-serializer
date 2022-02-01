@@ -474,9 +474,12 @@ interface CommonOptions {
 	byteOffset?: number
 }
 interface PackOptions extends IError, CommonOptions {
-	sharedBuffer?: ArrayBuffer
 	bufferSizeInBytes?: number
+	cacheBuffer?: boolean
+	sharedBuffer?: ArrayBuffer
 }
+
+const bufferCache: Map<any, ArrayBuffer> = new Map()
 
 export const pack = <A, B = any>(object: A, template: B, options: PackOptions = {}) => {
 
@@ -484,9 +487,18 @@ export const pack = <A, B = any>(object: A, template: B, options: PackOptions = 
 	if (typeof options.sharedBuffer !== 'undefined') {
 		buffer = options.sharedBuffer
 	} else {
-		buffer = new ArrayBuffer(
-			options.bufferSizeInBytes ?? calculateBufferSize(object, template)
-		)
+		if (options.cacheBuffer) {
+			let tmpBuffer = bufferCache.get(template)
+			if (!tmpBuffer) {
+				const size = options.bufferSizeInBytes ?? calculateBufferSize(object, template)
+				tmpBuffer = new ArrayBuffer(size)
+				bufferCache.set(template, tmpBuffer)
+			}
+			buffer = tmpBuffer
+		} else {
+			const size = options.bufferSizeInBytes ?? calculateBufferSize(object, template)
+			buffer = new ArrayBuffer(size)
+		}
 	}
 
 	const ref: RefObject = {
