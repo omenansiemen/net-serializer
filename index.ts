@@ -93,7 +93,6 @@ interface IError {
 	onErrorCallback?: (error: string, callStack?: Array<object>) => void
 }
 interface RefObject extends IError {
-	buffer: ArrayBuffer
 	byteOffset: number
 	objectStack: Array<any>
 	view: DataView
@@ -476,40 +475,28 @@ interface CommonOptions {
 }
 interface PackOptions extends IError, CommonOptions {
 	sharedBuffer?: ArrayBuffer
-	returnCopy?: boolean
 	bufferSizeInBytes?: number
 }
 
 export const pack = <A, B = any>(object: A, template: B, options: PackOptions = {}) => {
 
-	const {
-		sharedBuffer,
-		returnCopy = false,
-		bufferSizeInBytes,
-		byteOffset = 0
-	} = options
-
-	const sizeInBytes = (bufferSizeInBytes ?? calculateBufferSize(object, template))
-
 	let buffer: ArrayBuffer
-	if (typeof sharedBuffer !== 'undefined') {
-		buffer = sharedBuffer
+	if (typeof options.sharedBuffer !== 'undefined') {
+		buffer = options.sharedBuffer
 	} else {
-		buffer = new ArrayBuffer(sizeInBytes)
+		buffer = new ArrayBuffer(
+			options.bufferSizeInBytes ?? calculateBufferSize(object, template)
+		)
 	}
 
 	const ref: RefObject = {
 		objectStack: [object],
-		buffer,
-		byteOffset,
+		byteOffset: options.byteOffset ?? 0,
 		view: new DataView(buffer),
 		onErrorCallback: options.onErrorCallback,
 	}
 	flatten(object, template, ref)
 
-	if (typeof sharedBuffer !== 'undefined' && returnCopy) {
-		return buffer.slice(0, sizeInBytes)
-	}
 	return buffer
 }
 
