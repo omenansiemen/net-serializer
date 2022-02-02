@@ -174,6 +174,7 @@ function flatten(data: any, template: any, ref: RefObject) {
 export const calculateBufferSize = <A, B = any>(data: A, template: B, size = 0): number => {
 
 	if (isArrayTemplate(template) && Array.isArray(data)) {
+		dynamic = true
 		// Storing information how many elements there are
 		const arraySize: IMetaValue = {
 			type: template[1]?.lengthType ?? Types.uint32
@@ -214,6 +215,7 @@ export const calculateBufferSize = <A, B = any>(data: A, template: B, size = 0):
 				size += getByteLength(templateValue)
 			}
 			else if (typeof value === 'string') {
+				dynamic = true
 				const rawValue = encodeText(value)
 				// Storing length of bytes of string
 				const type = getTypeForStringLength(templateValue.type)
@@ -480,6 +482,7 @@ interface PackOptions extends IError, CommonOptions {
 }
 
 const bufferCache: Map<any, ArrayBuffer> = new Map()
+let dynamic = false
 
 export const pack = <A, B = any>(object: A, template: B, options: PackOptions = {}) => {
 
@@ -490,7 +493,11 @@ export const pack = <A, B = any>(object: A, template: B, options: PackOptions = 
 		if (options.cacheBufferByTemplate) {
 			let tmpBuffer = bufferCache.get(template)
 			if (!tmpBuffer) {
+				dynamic = false
 				const size = options.bufferSizeInBytes ?? calculateBufferSize(object, template)
+				if (dynamic) {
+					throw Error('Dynamic data (array or string) can not be serialized with cacheBufferByTemplate option enabled.')
+				}
 				tmpBuffer = new ArrayBuffer(size)
 				bufferCache.set(template, tmpBuffer)
 			}
