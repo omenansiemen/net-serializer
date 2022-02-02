@@ -475,7 +475,7 @@ interface CommonOptions {
 }
 interface PackOptions extends IError, CommonOptions {
 	bufferSizeInBytes?: number
-	cacheBuffer?: boolean
+	cacheBufferByTemplate?: boolean
 	sharedBuffer?: ArrayBuffer
 }
 
@@ -487,7 +487,7 @@ export const pack = <A, B = any>(object: A, template: B, options: PackOptions = 
 	if (typeof options.sharedBuffer !== 'undefined') {
 		buffer = options.sharedBuffer
 	} else {
-		if (options.cacheBuffer) {
+		if (options.cacheBufferByTemplate) {
 			let tmpBuffer = bufferCache.get(template)
 			if (!tmpBuffer) {
 				const size = options.bufferSizeInBytes ?? calculateBufferSize(object, template)

@@ -5,11 +5,11 @@ const utils = require('../utils')
 
 utils.testBufferSize(data.original, template, 7)
 
-const cacheBuffer = true
+const cacheBufferByTemplate = true
 
 for (let i = 0; i < 10; i++) {
-	NetSerializer.pack(data.original, template, { cacheBuffer })
+	NetSerializer.pack(data.original, template, { cacheBufferByTemplate })
 }
-const aBuf = NetSerializer.pack(data.original, template, { cacheBuffer })
+const aBuf = NetSerializer.pack(data.original, template, { cacheBufferByTemplate })
 const problemResult = NetSerializer.unpack(aBuf, template)
 utils.compareObjects(data.expectedResult, problemResult, 'Data 5 is corrupted!')

@@ -66,7 +66,7 @@ interface CommonOptions {
 }
 interface PackOptions extends IError, CommonOptions {
     bufferSizeInBytes?: number;
-    cacheBuffer?: boolean;
+    cacheBufferByTemplate?: boolean;
     sharedBuffer?: ArrayBuffer;
 }
 export declare const pack: <A, B = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
