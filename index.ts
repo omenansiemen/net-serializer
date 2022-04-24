@@ -61,6 +61,10 @@ export interface IMetaValue {
 	type: metaValueType
 	multiplier?: number
 	preventOverflow?: boolean
+	/**
+	 * Extreme type limits are used to store Infinity. Turns preventOverflow on internaly.
+	 */
+	infinity?: boolean
 	compress?: {
 		/**
 		 * @param value			Value of object's property being serialized
@@ -249,14 +253,14 @@ function addToBuffer(ref: ViewAndByteOffset, metaValue: Readonly<IMetaValue>, va
 	}
 
 	if (metaValue.type === Types.uint8) {
-		if (metaValue.preventOverflow) {
+		if (metaValue.preventOverflow || metaValue.infinity) {
 			value = (value < 0 ? 0 : (value > uint8Max ? uint8Max : value))
 		}
 		ref.view.setUint8(ref.byteOffset, value)
 		byteLength = 1
 	}
 	else if (metaValue.type === Types.int8) {
-		if (metaValue.preventOverflow) {
+		if (metaValue.preventOverflow || metaValue.infinity) {
 			value = (value < int8Min ? int8Min : (value > int8Max ? int8Max : value))
 		}
 		ref.view.setInt8(ref.byteOffset, value)
@@ -267,28 +271,28 @@ function addToBuffer(ref: ViewAndByteOffset, metaValue: Readonly<IMetaValue>, va
 		byteLength = 1
 	}
 	else if (metaValue.type === Types.uint16) {
-		if (metaValue.preventOverflow) {
+		if (metaValue.preventOverflow || metaValue.infinity) {
 			value = (value < 0 ? 0 : (value > uint16Max ? uint16Max : value))
 		}
 		ref.view.setUint16(ref.byteOffset, value)
 		byteLength = 2
 	}
 	else if (metaValue.type === Types.int16) {
-		if (metaValue.preventOverflow) {
+		if (metaValue.preventOverflow || metaValue.infinity) {
 			value = (value < int16Min ? int16Min : (value > int16Max ? int16Max : value))
 		}
 		ref.view.setInt16(ref.byteOffset, value)
 		byteLength = 2
 	}
 	else if (metaValue.type === Types.uint32) {
-		if (metaValue.preventOverflow) {
+		if (metaValue.preventOverflow || metaValue.infinity) {
 			value = (value < 0 ? 0 : (value > uint32Max ? uint32Max : value))
 		}
 		ref.view.setUint32(ref.byteOffset, value)
 		byteLength = 4
 	}
 	else if (metaValue.type === Types.int32) {
-		if (metaValue.preventOverflow) {
+		if (metaValue.preventOverflow || metaValue.infinity) {
 			value = (value < int32Min ? int32Min : (value > int32Max ? int32Max : value))
 		}
 		ref.view.setInt32(ref.byteOffset, value)
@@ -411,9 +415,15 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, ref: Unf
 
 	if (metaValue.type === Types.uint8) {
 		value = ref.view.getUint8(ref.byteOffset)
+		if (metaValue.infinity && value === Limits.uint8Max) {
+			value = Infinity
+		}
 		byteLength = 1
 	} else if (metaValue.type === Types.int8) {
 		value = ref.view.getInt8(ref.byteOffset)
+		if (metaValue.infinity && !(value > Limits.int8Min && value < Limits.int8Max)) {
+			value *= Infinity
+		}
 		byteLength = 1
 	}
 	else if (metaValue.type === Types.boolean) {
@@ -422,16 +432,28 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, ref: Unf
 	}
 	else if (metaValue.type === Types.uint16) {
 		value = ref.view.getUint16(ref.byteOffset)
+		if (metaValue.infinity && value === Limits.uint16Max) {
+			value = Infinity
+		}
 		byteLength = 2
 	} else if (metaValue.type === Types.int16) {
 		value = ref.view.getInt16(ref.byteOffset)
+		if (metaValue.infinity && !(value > Limits.int16Min && value < Limits.int16Max)) {
+			value *= Infinity
+		}
 		byteLength = 2
 	}
 	else if (metaValue.type === Types.uint32) {
 		value = ref.view.getUint32(ref.byteOffset)
+		if (metaValue.infinity && value === Limits.uint32Max) {
+			value = Infinity
+		}
 		byteLength = 4
 	} else if (metaValue.type === Types.int32) {
 		value = ref.view.getInt32(ref.byteOffset)
+		if (metaValue.infinity && !(value > Limits.int32Min && value < Limits.int32Max)) {
+			value *= Infinity
+		}
 		byteLength = 4
 	}
 	else if (metaValue.type === Types.float32) {

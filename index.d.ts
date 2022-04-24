@@ -38,6 +38,10 @@ export interface IMetaValue {
     type: metaValueType;
     multiplier?: number;
     preventOverflow?: boolean;
+    /**
+     * Extreme type limits are used to store Infinity. Turns preventOverflow on internaly.
+     */
+    infinity?: boolean;
     compress?: {
         /**
          * @param value			Value of object's property being serialized
