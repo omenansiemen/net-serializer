@@ -1,6 +1,6 @@
 {
   "name": "net-serializer",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "Type aware object serializer for sending structured data efficiently over network. Uses template object to describe which properties will be serialized into binary data buffer.",
   "main": "index.js",
   "module": "index.esm.js",
