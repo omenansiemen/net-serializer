@@ -55,24 +55,29 @@ export enum Types {
 	string = 'string',
 }
 
-type metaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'float64' | 'boolean' | 'string' | 'string8' | 'string16'
+type SerializableObjectTypes = Object | number | boolean | string
 
 export interface IMetaValue {
-	type: metaValueType
+	type: Types
 	multiplier?: number
 	preventOverflow?: boolean
 	/**
 	 * Extreme type limits are used to store Infinity. Turns preventOverflow on internaly.
 	 */
 	infinity?: boolean
+	/**
+	 * multiplier property is disabled when compress is defined
+	 */
 	compress?: {
 		/**
-		 * @param value			Value of object's property being serialized
-		 * @param objectStack	Original data being serialized is always first element
-		 *  					and then followed by elements of array being serialized
+		 * @param prop	Value of object's property being serialized
 		 */
-		pack: (prop: Object, objectStack?: any) => number
-		unpack: (value: number) => Object
+		pack: (prop: SerializableObjectTypes) => number
+		/**
+		 * @param value serialized data made by pack function
+		 * @return deserialized object that was given to pack function
+		 */
+		unpack: (value: number) => SerializableObjectTypes
 	}
 }
 const isMetaValue = (object: any): object is IMetaValue => {
@@ -98,7 +103,6 @@ interface IError {
 }
 interface RefObject extends IError {
 	byteOffset: number
-	objectStack: Array<any>
 	view: DataView
 }
 
@@ -117,9 +121,7 @@ function flatten(data: any, template: any, ref: RefObject) {
 			}
 		} else {
 			for (let element of data) {
-				ref.objectStack.push(element)
 				flatten(element, template[0], ref)
-				ref.objectStack.pop()
 			}
 		}
 	} else {
@@ -131,22 +133,14 @@ function flatten(data: any, template: any, ref: RefObject) {
 					ref.byteOffset += addToBuffer(
 						ref,
 						templateValue,
-						templateValue.compress.pack(value, ref.objectStack),
+						value,
 					)
 				} else {
 					flatten(value, templateValue, ref)
 				}
 			}
 			else if (isNumber(value) || isBoolean(value)) {
-				if (isMetaValue(templateValue) && templateValue.compress) {
-					ref.byteOffset += addToBuffer(
-						ref,
-						templateValue,
-						templateValue.compress.pack(value, ref.objectStack),
-					)
-				} else {
-					ref.byteOffset += addToBuffer(ref, templateValue, value)
-				}
+				ref.byteOffset += addToBuffer(ref, templateValue, value)
 			}
 			else if (typeof value === 'string') {
 				const rawValue = encodeText(value)
@@ -234,7 +228,7 @@ export const calculateBufferSize = <A, B = any>(data: A, template: B, size = 0):
 	return size
 }
 
-const getTypeForStringLength = (type: metaValueType): Types.uint8 | Types.uint16 | Types.uint32 => {
+const getTypeForStringLength = (type: Types): Types.uint8 | Types.uint16 | Types.uint32 => {
 	if (type === Types.string8) {
 		return Types.uint8
 	} else if (type === Types.string16) {
@@ -248,7 +242,9 @@ function addToBuffer(ref: ViewAndByteOffset, metaValue: Readonly<IMetaValue>, va
 
 	let byteLength = 0
 
-	if (isNumber(metaValue.multiplier) && isNumber(value)) {
+	if (metaValue.compress) {
+		value = metaValue.compress.pack(value)
+	} else if (isNumber(metaValue.multiplier) && isNumber(value)) {
 		value = value * metaValue.multiplier
 	}
 
@@ -371,7 +367,8 @@ function unflatten(buffer: ArrayBuffer, template: any, options: UnflattenOptions
 
 	if (isArrayTemplate(template)) {
 		result = []
-		const value = getValueFromBuffer(buffer, { type: template[1]?.lengthType ?? Types.uint32 }, options)
+		const type = template[1]?.lengthType ?? Types.uint32
+		const value = getValueFromBuffer(buffer, { type }, options)
 		const itemCallback = template[1]?.unpackCallback ?? null
 		for (let i = 0; i < (isNumber(value) ? value : 0); i++) {
 			let item = unflatten(buffer, template[0], options)
@@ -393,12 +390,7 @@ function unflatten(buffer: ArrayBuffer, template: any, options: UnflattenOptions
 		Object.keys(template).forEach(key => {
 			const templateValue = template[key]
 			if (isMetaValue(templateValue)) {
-				if (templateValue.compress) {
-					const value = getValueFromBuffer(buffer, templateValue, options)
-					result[key] = templateValue.compress.unpack(value as any)
-				} else {
-					result[key] = getValueFromBuffer(buffer, templateValue, options)
-				}
+				result[key] = getValueFromBuffer(buffer, templateValue, options)
 			} else {
 				result[key] = unflatten(buffer, templateValue, options)
 			}
@@ -485,7 +477,9 @@ function getValueFromBuffer(buffer: ArrayBuffer, metaValue: IMetaValue, ref: Unf
 		value = decodeText(buffer.slice(strBufStart, strBufEnd))
 	}
 
-	if (isNumber(metaValue.multiplier) && isNumber(value)) {
+	if (metaValue.compress) {
+		value = metaValue.compress.unpack(value as any)
+	} else if (isNumber(metaValue.multiplier) && isNumber(value)) {
 		value = value / metaValue.multiplier
 	}
 
@@ -531,7 +525,6 @@ export const pack = <A, B = any>(object: A, template: B, options: PackOptions = 
 	}
 
 	const ref: RefObject = {
-		objectStack: [object],
 		byteOffset: options.byteOffset ?? 0,
 		view: new DataView(buffer),
 		onErrorCallback: options.onErrorCallback,

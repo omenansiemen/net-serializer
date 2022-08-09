@@ -33,23 +33,28 @@ export declare enum Types {
     string16 = "string16",
     string = "string"
 }
-declare type metaValueType = 'int8' | 'uint8' | 'int16' | 'uint16' | 'int32' | 'uint32' | 'float32' | 'float64' | 'boolean' | 'string' | 'string8' | 'string16';
+declare type SerializableObjectTypes = Object | number | boolean | string;
 export interface IMetaValue {
-    type: metaValueType;
+    type: Types;
     multiplier?: number;
     preventOverflow?: boolean;
     /**
      * Extreme type limits are used to store Infinity. Turns preventOverflow on internaly.
      */
     infinity?: boolean;
+    /**
+     * multiplier property is disabled when compress is defined
+     */
     compress?: {
         /**
-         * @param value			Value of object's property being serialized
-         * @param objectStack	Original data being serialized is always first element
-         *  					and then followed by elements of array being serialized
+         * @param prop	Value of object's property being serialized
          */
-        pack: (prop: Object, objectStack?: any) => number;
-        unpack: (value: number) => Object;
+        pack: (prop: SerializableObjectTypes) => number;
+        /**
+         * @param value serialized data made by pack function
+         * @return deserialized object that was given to pack function
+         */
+        unpack: (value: number) => SerializableObjectTypes;
     };
 }
 interface ArrayOptions {

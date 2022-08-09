@@ -1,17 +1,18 @@
 const NS = require('../..')
 
-const coordinate = (prop) => ({
+const multiplier = 100
+
+const coordinate = () => ({
   type: NS.Types.int16,
   compress: {
-    pack: (val, stack = []) => {
-      const element = stack[stack.length - 1]
-      return element.state.target.position[prop] - val
+    pack: (val) => {
+      return val * multiplier
     },
     unpack: (val) => {
-      return val
+      return val / multiplier
     },
   },
-  multiplier: 100
+  multiplier: multiplier
 })
 
 exports.template = {
@@ -20,7 +21,7 @@ exports.template = {
     state: {
       source: {
         position: {
-          x: coordinate('x'), y: coordinate('y')
+          x: coordinate(), y: coordinate()
         },
         velocity: {
           x: { type: NS.Types.int8, preventOverflow: true },

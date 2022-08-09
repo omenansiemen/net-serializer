@@ -35,7 +35,7 @@ exports.expectedResult = {
   hits: [{
     state: {
       source: {
-        position: { x: 38.87, y: 48 },
+        position: { x: 11.12, y: 12 },
         velocity: { x: 3, y: 3 },
       },
     },
@@ -45,7 +45,7 @@ exports.expectedResult = {
   {
     state: {
       source: {
-        position: { x: -25, y: -27 },
+        position: { x: 45, y: 122 },
         velocity: { x: 5, y: 8 },
       },
     },
