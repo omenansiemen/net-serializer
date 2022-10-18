@@ -69,7 +69,10 @@ export declare type ArrayTemplate<T = any> = [T, ArrayOptions?];
 interface IError {
     onErrorCallback?: (error: string, callStack?: Array<object>) => void;
 }
-export declare const calculateBufferSize: <A, B = any>(data: A, template: B, size?: number) => number;
+declare type Indexable = {
+    [key: string]: any;
+};
+export declare const calculateBufferSize: <A extends Indexable, B extends Indexable = any>(data: A, template: B, size?: number) => number;
 interface CommonOptions {
     byteOffset?: number;
 }
@@ -78,7 +81,7 @@ interface PackOptions extends IError, CommonOptions {
     cacheBufferByTemplate?: boolean;
     sharedBuffer?: ArrayBuffer;
 }
-export declare const pack: <A, B = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
+export declare const pack: <A extends Indexable, B extends Indexable = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
 export declare const unpack: <R = any>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
 interface ITextHandler {
     encode: (input: string) => Uint8Array;
@@ -86,11 +89,11 @@ interface ITextHandler {
 }
 export declare const setTextHandler: (handler: ITextHandler) => void;
 declare const NetSerializer: {
-    pack: <A, B = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
+    pack: <A extends Indexable, B extends Indexable = any>(object: A, template: B, options?: PackOptions) => ArrayBuffer;
     unpack: <R = any>(buffer: ArrayBuffer, template: any, options?: CommonOptions) => R;
     utils: {
         setTextHandler: (handler: ITextHandler) => void;
-        calculateBufferSize: <A_1, B_1 = any>(data: A_1, template: B_1, size?: number) => number;
+        calculateBufferSize: <A_1 extends Indexable, B_1 extends Indexable = any>(data: A_1, template: B_1, size?: number) => number;
         Types: typeof Types;
     };
 };

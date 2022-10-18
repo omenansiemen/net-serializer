@@ -125,7 +125,7 @@ function flatten(data: any, template: any, ref: RefObject) {
 			}
 		}
 	} else {
-		for (let key of Object.keys(template)) {
+		for (let key in template) {
 			const value = data[key]
 			const templateValue = template[key]
 			if (isObject(value)) {
@@ -169,7 +169,11 @@ function flatten(data: any, template: any, ref: RefObject) {
 	}
 }
 
-export const calculateBufferSize = <A, B = any>(data: A, template: B, size = 0): number => {
+type Indexable = {
+	[key: string]: any
+}
+
+export const calculateBufferSize = <A extends Indexable, B extends Indexable = any>(data: A, template: B, size = 0): number => {
 
 	if (isArrayTemplate(template) && Array.isArray(data)) {
 		dynamic = true
@@ -197,10 +201,8 @@ export const calculateBufferSize = <A, B = any>(data: A, template: B, size = 0):
 			}
 		}
 	} else {
-		Object.keys(template).forEach(key => {
-			//@ts-ignore
+		for (const key in template) {
 			const value = data[key]
-			//@ts-ignore
 			const templateValue = template[key]
 			if (isObject(value)) {
 				if (isMetaValue(templateValue) && templateValue.compress) {
@@ -222,7 +224,7 @@ export const calculateBufferSize = <A, B = any>(data: A, template: B, size = 0):
 				// Storing value as Uint8Array of bytes
 				size += rawValue.byteLength
 			}
-		})
+		}
 	}
 
 	return size
@@ -387,14 +389,14 @@ function unflatten(buffer: ArrayBuffer, template: any, options: UnflattenOptions
 	}
 	else {
 		result = {}
-		Object.keys(template).forEach(key => {
+		for (const key in template) {
 			const templateValue = template[key]
 			if (isMetaValue(templateValue)) {
 				result[key] = getValueFromBuffer(buffer, templateValue, options)
 			} else {
 				result[key] = unflatten(buffer, templateValue, options)
 			}
-		})
+		}
 	}
 
 	return result
@@ -500,7 +502,7 @@ interface PackOptions extends IError, CommonOptions {
 const bufferCache: Map<any, ArrayBuffer> = new Map()
 let dynamic = false
 
-export const pack = <A, B = any>(object: A, template: B, options: PackOptions = {}) => {
+export const pack = <A extends Indexable, B extends Indexable = any>(object: A, template: B, options: PackOptions = {}) => {
 
 	let buffer: ArrayBuffer
 	if (typeof options.sharedBuffer !== 'undefined') {
