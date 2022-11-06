@@ -39,10 +39,6 @@ export interface IMetaValue {
     multiplier?: number;
     preventOverflow?: boolean;
     /**
-     * Extreme type limits are used to store Infinity. Turns preventOverflow on internaly.
-     */
-    infinity?: boolean;
-    /**
      * multiplier property is disabled when compress is defined
      */
     compress?: {
