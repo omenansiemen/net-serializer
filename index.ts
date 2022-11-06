@@ -128,7 +128,10 @@ function flatten(data: any, template: any, ref: RefObject) {
 		for (let key in template) {
 			const value = data[key]
 			const templateValue = template[key]
-			if (isObject(value)) {
+			if (isNumber(value) || isBoolean(value)) {
+				ref.byteOffset += addToBuffer(ref, templateValue, value)
+			}
+			else if (isObject(value)) {
 				if (isMetaValue(templateValue) && templateValue.compress) {
 					ref.byteOffset += addToBuffer(
 						ref,
@@ -138,9 +141,6 @@ function flatten(data: any, template: any, ref: RefObject) {
 				} else {
 					flatten(value, templateValue, ref)
 				}
-			}
-			else if (isNumber(value) || isBoolean(value)) {
-				ref.byteOffset += addToBuffer(ref, templateValue, value)
 			}
 			else if (typeof value === 'string') {
 				const rawValue = encodeText(value)
@@ -204,15 +204,15 @@ export const calculateBufferSize = <A extends Indexable, B extends Indexable = a
 		for (const key in template) {
 			const value = data[key]
 			const templateValue = template[key]
-			if (isObject(value)) {
+			if (isNumber(value) || isBoolean(value)) {
+				size += getByteLength(templateValue)
+			}
+			else if (isObject(value)) {
 				if (isMetaValue(templateValue) && templateValue.compress) {
 					size += getByteLength(templateValue)
 				} else {
 					size = calculateBufferSize(value, templateValue, size)
 				}
-			}
-			else if (isNumber(value) || isBoolean(value)) {
-				size += getByteLength(templateValue)
 			}
 			else if (typeof value === 'string') {
 				dynamic = true
@@ -367,14 +367,17 @@ function unflatten(buffer: ArrayBuffer, template: any, options: UnflattenOptions
 
 	let result: any
 
-	if (isArrayTemplate(template)) {
+	if (isMetaValue(template)) {
+		result = getValueFromBuffer(buffer, template, options)
+	}
+	else if (isArrayTemplate(template)) {
 		result = []
 		const type = template[1]?.lengthType ?? Types.uint32
 		const value = getValueFromBuffer(buffer, { type }, options)
 		const itemCallback = template[1]?.unpackCallback ?? null
 		for (let i = 0; i < (isNumber(value) ? value : 0); i++) {
 			let item = unflatten(buffer, template[0], options)
-			if (itemCallback) {
+			if (typeof itemCallback === 'function') {
 				item = itemCallback(item)
 				if (typeof item !== 'undefined' && item !== null) {
 					result.push(item)
@@ -383,9 +386,6 @@ function unflatten(buffer: ArrayBuffer, template: any, options: UnflattenOptions
 				result.push(item)
 			}
 		}
-	}
-	else if (isMetaValue(template)) {
-		result = getValueFromBuffer(buffer, template, options)
 	}
 	else {
 		result = {}
