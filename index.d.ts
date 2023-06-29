@@ -34,7 +34,7 @@ export declare enum Types {
     string = "string"
 }
 declare type SerializableObjectTypes = Object | number | boolean | string;
-export interface IMetaValue {
+export interface IMetaValue<T = SerializableObjectTypes> {
     type: Types;
     multiplier?: number;
     preventOverflow?: boolean;
@@ -45,12 +45,12 @@ export interface IMetaValue {
         /**
          * @param prop	Value of object's property being serialized
          */
-        pack: (prop: SerializableObjectTypes) => number;
+        pack: (prop: T) => number;
         /**
          * @param value serialized data made by pack function
          * @return deserialized object that was given to pack function
          */
-        unpack: (value: number) => SerializableObjectTypes;
+        unpack: (value: number) => T;
     };
 }
 interface ArrayOptions {
